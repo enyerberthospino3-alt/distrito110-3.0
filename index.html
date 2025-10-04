@@ -919,12 +919,52 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
         }
 
         .product-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(220, 20, 60, 0.3);
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--amarillo-mostaza), var(--rojo));
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .quick-view-btn {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--rojo);
+            color: var(--blanco);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .product-card:hover .quick-view-btn {
+            bottom: 20px;
+            opacity: 1;
         }
 
         .product-image {
