@@ -1,14 +1,71 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Distrito 110</title>
-  <link rel="stylesheet" href="styles.css"/>
+  
+  <!-- Estilos incrustados -->
+  <style>
+    :root {
+      --rojo: #e63946;
+      --verde: #2a9d8f;
+      --gris: #f4f4f4;
+    }
+    body {
+      margin:0; font-family:Arial, sans-serif; background:#fff; color:#333;
+    }
+    header {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:1rem; background:var(--rojo); color:#fff;
+    }
+    h1 { margin:0; font-size:1.5rem; }
+    .cart-icon { cursor:pointer; font-size:1.2rem; }
+    .categories {
+      display:flex; gap:0.5rem; padding:1rem; background:#f8f8f8;
+    }
+    .category-btn {
+      padding:0.5rem 1rem; border:none; border-radius:5px;
+      cursor:pointer; background:#ddd;
+    }
+    .category-btn.active { background:var(--rojo); color:#fff; }
+    .products-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:1rem; padding:1rem;
+    }
+    .product-card {
+      border:1px solid #ddd; border-radius:10px; overflow:hidden;
+      background:#fff; cursor:pointer; transition:transform 0.2s;
+    }
+    .product-card:hover { transform:scale(1.02); }
+    .product-image img { width:100%; height:200px; object-fit:cover; }
+    .product-info { padding:1rem; }
+    .product-name { font-weight:bold; margin-bottom:0.5rem; }
+    .product-details { font-size:0.9rem; color:#555; margin-bottom:0.5rem; }
+    .product-price { font-size:1.2rem; font-weight:bold; color:var(--rojo); }
+    .add-to-cart {
+      margin-top:0.5rem; padding:0.5rem 1rem; border:none;
+      background:var(--verde); color:#fff; border-radius:5px; cursor:pointer;
+    }
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.6); justify-content:center; align-items:center;
+    }
+    .modal.active { display:flex; }
+    .modal-content {
+      background:#fff; padding:2rem; border-radius:10px; width:90%; max-width:600px;
+      max-height:90%; overflow-y:auto;
+    }
+    .submit-btn { background:var(--rojo); color:#fff; padding:0.7rem 1rem; border:none; border-radius:5px; cursor:pointer; }
+    .whatsapp-btn {
+      position:fixed; bottom:20px; right:20px; background:#25d366; padding:15px;
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 6px rgba(0,0,0,0.2);
+    }
+    .whatsapp-btn svg { width:32px; height:32px; fill:#fff; }
+  </style>
 </head>
 <body>
-  
-  <!-- Pantalla de Login -->
+
   <div id="loginScreen" class="login-screen">
     <form id="loginForm" onsubmit="login(event)">
       <h2>Iniciar Sesión</h2>
@@ -19,7 +76,6 @@
     </form>
   </div>
 
-  <!-- Aplicación Principal -->
   <div id="mainApp" class="hidden">
     <header>
       <h1>Distrito 110</h1>
@@ -40,7 +96,6 @@
     </main>
   </div>
 
-  <!-- Modal Carrito -->
   <div class="modal" id="cartModal">
     <div class="modal-content">
       <h2>Carrito</h2>
@@ -63,135 +118,44 @@
     </div>
   </div>
 
-  <!-- Modal Admin -->
-  <div class="modal" id="adminModal">
-    <div class="modal-content">
-      <h2>Administración</h2>
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
-        <button class="tab" onclick="switchTab('orders')">Pedidos</button>
-        <button class="tab" onclick="switchTab('products')">Productos</button>
-      </div>
-      <div class="tab-content active" id="dashboardContent">
-        <div id="dashboardStats"></div>
-        <div id="dashboardCharts"></div>
-      </div>
-      <div class="tab-content" id="ordersContent">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
-          <h3>Pedidos</h3>
-          <select id="orderFilter" onchange="filterOrders()" style="padding:0.5rem; border-radius:5px; border:2px solid #ddd;">
-            <option value="todos">Todos</option>
-            <option value="nuevo">Nuevos</option>
-            <option value="comprado">Comprados</option>
-            <option value="encamino">En camino</option>
-            <option value="entregado">Entregados</option>
-          </select>
-        </div>
-        <div class="orders-table" id="ordersTable"></div>
-      </div>
-      <div class="tab-content" id="productsContent">
-        <button class="submit-btn" onclick="showAddProduct()" style="margin-bottom:2rem;">Agregar Nuevo Producto</button>
-        <div id="adminProductsList"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Producto -->
-  <div class="modal" id="productFormModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="formTitle">Agregar Producto</h2>
-        <button class="close-btn" onclick="closeProductForm()">×</button>
-      </div>
-      <form id="productForm" onsubmit="saveProduct(event)">
-        <div class="form-group">
-          <label>Nombre del Producto *</label>
-          <input type="text" id="productName" required>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Categoría *</label>
-            <select id="productCategory" required>
-              <option value="">Seleccionar</option>
-              <option value="ropa">Ropa</option>
-              <option value="calzado">Calzado</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Tiempo de Entrega *</label>
-            <input type="text" id="productDelivery" required placeholder="Ej: 3-5 días">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tallas Disponibles *</label>
-            <input type="text" id="productSizes" required placeholder="Ej: S, M, L, XL">
-          </div>
-          <div class="form-group">
-            <label>Colores Disponibles *</label>
-            <input type="text" id="productColors" required placeholder="Ej: Negro, Blanco, Rojo">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Precio de Venta (COP) *</label>
-            <input type="number" id="productPrice" required placeholder="89900" min="0">
-          </div>
-          <div class="form-group">
-            <label>Costo Proveedor (COP) *</label>
-            <input type="number" id="productCost" required placeholder="65000" min="0">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Margen de Ganancia</label>
-          <input type="text" id="profitMargin" readonly style="background:#f0f0f0; font-weight:bold; color:green;">
-        </div>
-        <div class="form-group">
-          <label>Imagen del Producto</label>
-          <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageInput').click()">
-            <p>Haz clic o arrastra una imagen</p>
-            <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
-            <img id="imagePreview" class="image-preview" style="display:none;">
-          </div>
-        </div>
-        <button type="submit" class="submit-btn" id="saveProductBtn">Guardar Producto</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Botón WhatsApp -->
   <a href="https://wa.me/573189377107?text=Hola,%20necesito%20ayuda" class="whatsapp-btn" target="_blank">
     <svg viewBox="0 0 32 32">
-      <path d="M16 0c-8.837 0-16 7.163-16 16 ..."/>
+      <path d="M16 0c-8.837 0-16 7.163-16 16..."/>
     </svg>
   </a>
 
-  <!-- ==================== SCRIPT PRINCIPAL ==================== -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
     import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-    // 🔹 Configuración Firebase
-    const firebaseConfig = { ... }; // (igual que tu archivo original)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBCxsB21i2-g9c6zIY988R8Xvq5ctVLzrI",
+      authDomain: "distrito110-f80c4.firebaseapp.com",
+      projectId: "distrito110-f80c4",
+      storageBucket: "distrito110-f80c4.firebasestorage.app",
+      messagingSenderId: "433906086147",
+      appId: "1:433906086147:web:b1595ae6759d2499073936"
+    };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currentUser = null;
     let products = [];
-    let orders = [];
     let cart = JSON.parse(localStorage.getItem('distrito110_cart')) || [];
-    let selectedPayment = null;
-    let editingProductId = null;
-    let currentImageData = null;
     let currentFilter = 'todos';
 
-    // 🔹 Todas tus funciones aquí (login, logout, addToCart, updateCart, etc.)
-    // ⚠️ Las mantuve iguales, solo quité duplicados.
+    function login(event) { /* ... */ }
+    function logout() { /* ... */ }
+    function toggleCart() { /* ... */ }
+    function showCheckoutForm() { /* ... */ }
+    function selectPayment(method) { /* ... */ }
+    function processCheckout() { /* ... */ }
+    function updateCart() { /* ... */ }
+    function filterCategory(category) { /* ... */ }
+    function addToCart(id) { /* ... */ }
 
-    // ✅ ÚNICA versión de renderProducts
     function renderProducts(filter = 'todos') {
       currentFilter = filter;
       const grid = document.getElementById('productsGrid');
