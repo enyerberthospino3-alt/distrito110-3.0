@@ -700,7 +700,7 @@ function renderProducts(filter = 'todos') {
 
                 const message = `¡Hola! Quiero hacer un pedido:\n\n${cart.map(item => `${item.quantity}x ${item.name}${item.selectedSize ? ` - Talla: ${item.selectedSize}` : ''}${item.selectedColor ? ` - Color: ${item.selectedColor}` : ''}`).join('\n')}\n\nTotal: ${total.toLocaleString('es-CO')}\nPago: ${selectedPayment}\n\nDirección: ${address}\nCiudad: ${city}`;
                 
-                window.open(`https://wa.me/573189377107?text=${encodeURIComponent(message)}`, '_blank');
+                window.open(`https://wa.me/573157138059?text=${encodeURIComponent(message)}`, '_blank');
 
                 alert('¡Pedido realizado! Te contactaremos por WhatsApp');
                 cart = [];
