@@ -1410,43 +1410,43 @@
             }
             loadProducts();
             if (user) loadOrders();
-        });
+});
 
 
-        function renderProducts(filter = 'todos') {
-            currentFilter = filter;
-            const grid = document.getElementById('productsGrid');
-            
-            if (products.length === 0) {
-                grid.innerHTML = '<div class="empty-products">No hay productos disponibles</div>';
-                return;
-            }
+function renderProducts(filter = 'todos') {
+    currentFilter = filter;
+    const grid = document.getElementById('productsGrid');
+    
+    if (products.length === 0) {
+        grid.innerHTML = '<div class="empty-products">No hay productos disponibles</div>';
+        return;
+    }
 
-            const filteredProducts = filter === 'todos' ? products : products.filter(p => p.category === filter);
+    const filteredProducts = filter === 'todos' ? products : products.filter(p => p.category === filter);
 
-            if (filteredProducts.length === 0) {
-                grid.innerHTML = '<div class="empty-products">No hay productos en esta categoría</div>';
-                return;
-            }
+    if (filteredProducts.length === 0) {
+        grid.innerHTML = '<div class="empty-products">No hay productos en esta categoría</div>';
+        return;
+    }
 
-            grid.innerHTML = filteredProducts.map(product => `
-                <div class="product-card" onclick="openProductDetail('${product.id}')">
-                    <div class="product-image">
-                        ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div style="font-size: 4rem;">📦</div>'}
-                    </div>
-                    <div class="product-info">
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-details">
-                            ${product.sizes ? `Tallas disponibles<br>` : ''}
-                            ${product.colors ? `Varios colores<br>` : ''}
-                            ⏱️ ${product.deliveryTime || '3-5 días'}
-                        </div>
-                        <div class="product-price">${product.price.toLocaleString('es-CO')}</div>
-                        <button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}')">Agregar al Carrito</button>
-                    </div>
+    grid.innerHTML = filteredProducts.map(product => `
+        <div class="product-card" onclick="openProductDetail('${product.id}')">
+            <div class="product-image">
+                ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div style="font-size: 4rem;">📦</div>'}
+            </div>
+            <div class="product-info">
+                <div class="product-name">${product.name}</div>
+                <div class="product-details">
+                    ${product.sizes ? `Tallas disponibles<br>` : ''}
+                    ${product.colors ? `Varios colores<br>` : ''}
+                    ⏱️ ${product.deliveryTime || '3-5 días'}
                 </div>
-            `).join('');
-        }
+                <div class="product-price">${product.price.toLocaleString('es-CO')}</div>
+                <button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}')">Agregar al Carrito</button>
+            </div>
+        </div>
+    `).join('');
+}
 
 
         async function login(event) {
