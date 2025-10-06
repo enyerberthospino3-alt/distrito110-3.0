@@ -1496,8 +1496,7 @@
 
 
     <script type="module">
-        // --- CÓDIGO MODULAR DE FIREBASE (El problema es la sintaxis al importar) ---
-        // Se definen las importaciones al inicio, como es estándar en módulos.
+        // --- SEPARACIÓN Y CARGA DE MÓDULOS CRÍTICOS ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
@@ -1525,7 +1524,7 @@
         let currentImageData = null;
         let currentFilter = 'todos';
 
-        // --- DEFINICIÓN DE FUNCIONES (Para que el script las conozca) ---
+        // --- DEFINICIÓN DE FUNCIONES ---
 
         // AUTH & ADMIN
         async function login(event) {
@@ -2027,7 +2026,7 @@
             localStorage.setItem('last_notification_day', new Date().toDateString());
         }
         
-        // --- ASIGNACIONES GLOBALES (REPARACIÓN DE COMPATIBILIDAD) ---
+        // --- ASIGNACIONES GLOBALES ---
         window.login = login;
         window.logout = logout;
         window.filterCategory = filterCategory;
@@ -2040,11 +2039,13 @@
         window.showCheckoutForm = showCheckoutForm;
         window.showAddProduct = showAddProduct;
         window.closeProductForm = closeProductForm;
-        // Agrega todas las demás funciones que se usan en `onclick` aquí
+        window.updateProfitMargin = updateProfitMargin; 
         window.toggleCart = toggleCart;
         window.toggleAdmin = toggleAdmin;
         window.openProductDetail = openProductDetail;
         window.closeProductDetail = closeProductDetail;
+        window.saveProduct = saveProduct;
+        // Agrega todas las demás funciones que se usan en onclick aquí
         // ... (etc.)
 
 
@@ -2053,7 +2054,7 @@
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             
-            // Lógica de visibilidad del Administrador
+            // Lógica de visibilidad
             if (user) {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
