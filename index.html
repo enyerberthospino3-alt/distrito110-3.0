@@ -16,18 +16,7 @@
             --amarillo-mostaza: #d4af37;
         }
 
-        /* NEW: Oculta el cuerpo mientras el script se inicializa */
-        .loading {
-            visibility: hidden;
-            opacity: 0;
-            transition: none;
-        }
-        /* NEW: Quita la clase de carga al iniciar */
-        .loaded {
-            visibility: visible;
-            opacity: 1;
-            transition: opacity 0.5s;
-        }
+        /* CLASES DE CARGA ELIMINADAS/REEMPLAZADAS PARA MÁXIMA COMPATIBILIDAD */
 
         * {
             margin: 0;
@@ -39,7 +28,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: var(--negro);
-            display: flex; /* Flex para el footer */
+            display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
@@ -107,7 +96,7 @@
             color: var(--amarillo-mostaza);
         }
         
-        /* New Search Input */
+        /* Search Input */
         #productSearch {
             width: 100%;
             padding: 0.5rem 1rem;
@@ -1120,6 +1109,7 @@
             padding: 20px 0;
             text-align: center;
             font-size: 0.9rem;
+            margin-top: auto; /* Se asegura de ir al final */
         }
         .footer a {
             color: var(--amarillo-mostaza);
@@ -1176,7 +1166,7 @@
         }
     </style>
 </head>
-<body class="loading">
+<body>
     <div id="loginScreen" class="hidden">
         <div class="login-container">
             <div class="login-logo">DISTRITO 110</div>
@@ -1501,8 +1491,8 @@
         <div class="container">
             &copy; 2025 Distrito 110. Todos los derechos reservados. | 
             <a href="#contacto">Contacto</a> | 
-            <a href="#" onclick="alert('Políticas de Privacidad y Manejo de Datos')">Privacidad</a> |
-            <a href="#" onclick="alert('Derechos de Admisión: Nos reservamos el derecho de modificar o cancelar pedidos bajo sospecha de fraude o información incompleta.')">Derechos de Admisión</a>
+            <a href="#" onclick="alert('Políticas de Privacidad: Se recopilan datos de contacto para el procesamiento de pedidos. No compartimos datos personales con terceros no relacionados con el envío.')">Privacidad</a> |
+            <a href="#" onclick="alert('Derechos de Admisión: Nos reservamos el derecho de modificar o cancelar pedidos bajo sospecha de fraude o información incompleta. El proceso de compra implica la aceptación de la disponibilidad del producto y los tiempos de envío.')">Derechos de Admisión</a>
         </div>
     </footer>
 
@@ -1534,97 +1524,100 @@
         let editingProductId = null;
         let currentImageData = null;
         let currentFilter = 'todos';
-        
-        // --- ASIGNACIONES GLOBALES ---
-        // Se definen y asignan al window. para que el HTML pueda llamarlas directamente.
-        window.login = login;
-        window.logout = logout;
-        window.filterCategory = filterCategory;
-        window.searchProducts = searchProducts; 
-        window.addToCart = addToCart;
-        window.updateQuantity = updateQuantity;
-        window.removeFromCart = removeFromCart;
-        window.selectPayment = selectPayment;
-        window.processCheckout = processCheckout;
-        window.showCheckoutForm = showCheckoutForm;
-        window.showAddProduct = showAddProduct;
-        window.closeProductForm = closeProductForm;
-        window.handleImageSelect = handleImageSelect;
-        window.saveProduct = saveProduct;
-        window.editProduct = editProduct;
-        window.deleteProduct = deleteProduct;
-        window.switchTab = switchTab;
-        window.filterOrders = filterOrders;
-        window.changeDetailQuantity = changeDetailQuantity;
-        window.addToCartFromDetail = addToCartFromDetail;
-        window.openProductDetail = openProductDetail;
-        window.closeProductDetail = closeProductDetail;
-        window.selectDetailSize = selectDetailSize;
-        window.selectDetailColor = selectDetailColor;
-        window.changeOrderStatus = changeOrderStatus;
-        window.toggleOrderDetails = toggleOrderDetails; 
-        window.closeNotificationModal = closeNotificationModal; 
-        window.updateProfitMargin = updateProfitMargin;
-        window.updateCartItemSize = updateCartItemSize;
-        window.updateCartItemColor = updateCartItemColor;
-        
-        // Funciones para Event Listeners (también deben ser globales para ser vinculadas)
-        window.toggleCart = toggleCart;
-        window.toggleAdmin = toggleAdmin;
 
+        // --- DEFINICIÓN DE FUNCIONES (Todas las funciones deben ser definidas ANTES de ser asignadas a window o usadas en listeners) ---
 
-        // --- LÓGICA DE FIREBASE Y VISIBILIDAD (REFORZADA) ---
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            
-            // Lógica de visibilidad del Administrador
-            if (user) {
-                // Si hay usuario (Admin)
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('logoutBtn').classList.remove('hidden');
-            } else {
-                // Si NO hay usuario (Cliente)
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('logoutBtn').classList.add('hidden');
+        // AUTH & ADMIN
+        async function login(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('loginError');
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Iniciando sesión...';
+            errorDiv.classList.remove('active');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                errorDiv.textContent = 'Email o contraseña incorrectos';
+                errorDiv.classList.add('active');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Iniciar Sesión';
             }
-            
-            // Quitamos la clase de carga final
-            document.body.classList.remove('loading');
-            document.body.classList.add('loaded');
+        }
 
-            loadProducts();
-            if (user) loadOrders();
-        });
+        async function logout() {
+            await signOut(auth);
+            location.reload();
+        }
 
+        function toggleAdmin() {
+            if (!currentUser) {
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('adminModal').classList.toggle('active');
+            if (document.getElementById('adminModal').classList.contains('active')) {
+                loadOrders();
+            }
+        }
 
-        // --- REFORZAMIENTO DE EVENT LISTENERS (SOLUCIÓN A ReferenceError) ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const cartButton = document.getElementById('cartButton');
-            const adminButton = document.getElementById('adminButton');
-            const closeCartButton = document.getElementById('closeCartButton');
-            const closeAdminButton = document.getElementById('closeAdminButton');
-
-            // Vinculación directa con Event Listeners 
-            if (cartButton) cartButton.addEventListener('click', toggleCart);
-            if (adminButton) adminButton.addEventListener('click', toggleAdmin);
-            if (closeCartButton) closeCartButton.addEventListener('click', toggleCart);
-            if (closeAdminButton) closeAdminButton.addEventListener('click', toggleAdmin);
-            
-            // Input change listener for profit margin calculation
-            const priceInput = document.getElementById('productPrice');
-            const costInput = document.getElementById('productCost');
-            if (priceInput) priceInput.addEventListener('input', updateProfitMargin);
-            if (costInput) costInput.addEventListener('input', updateProfitMargin);
-        });
-
-        // --- FUNCIONES DE NAVEGACIÓN Y CARRITO ---
-
+        // NAVIGATION / UI
         function toggleCart() {
             document.getElementById('cartModal').classList.toggle('active');
             document.getElementById('checkoutForm').style.display = 'none';
             document.getElementById('showCheckoutBtn').style.display = cart.length > 0 ? 'block' : 'none';
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Content').classList.add('active');
+        }
+
+        // CART & CHECKOUT
+        function saveCart() {
+            localStorage.setItem('distrito110_cart', JSON.stringify(cart));
+        }
+
+        function updateCartItemSize(index, size) {
+            cart[index].selectedSize = size;
+            saveCart();
+        }
+
+        function updateCartItemColor(index, color) {
+            cart[index].selectedColor = color;
+            saveCart();
+        }
+
+        function updateQuantity(productId, change) {
+            // Encuentra el item por ID (la lógica de opciones es compleja para esta vista)
+            const itemIndex = cart.findIndex(i => i.id === productId);
+            if (itemIndex > -1) {
+                const item = cart[itemIndex];
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    saveCart();
+                    updateCart();
+                }
+            }
+        }
+
+        function removeFromCart(productId) {
+            // Esto solo elimina el primer match por ID. En una versión avanzada, debería manejar opciones.
+            const index = cart.findIndex(item => item.id === productId);
+            if (index > -1) {
+                cart.splice(index, 1);
+                saveCart();
+                updateCart();
+            }
         }
         
         function updateCart() {
@@ -1673,132 +1666,6 @@
             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             cartTotal.textContent = total.toLocaleString('es-CO');
             showCheckoutBtn.style.display = 'block';
-        }
-
-        function openProductDetail(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-            
-            // Lógica de cálculo de precio con descuento
-            const isDiscounted = product.discount > 0 && 
-                                product.discountEndDate && 
-                                new Date(product.discountEndDate) > new Date();
-            
-            const finalPrice = isDiscounted 
-                ? product.price * (1 - product.discount / 100)
-                : product.price;
-
-            currentDetailProduct = product;
-            detailQuantity = 1;
-            selectedDetailSize = '';
-            selectedDetailColor = '';
-
-            document.getElementById('detailTitle').textContent = product.name;
-            document.getElementById('detailPrice').innerHTML = isDiscounted 
-                ? `${finalPrice.toLocaleString('es-CO')} <span class="original-price" style="font-size: 1rem; color: #999; text-decoration: line-through;">$${product.price.toLocaleString('es-CO')}</span>`
-                : `$${finalPrice.toLocaleString('es-CO')}`;
-
-            document.getElementById('detailDelivery').innerHTML = `<strong>🚚 Tiempo de entrega:</strong> ${product.deliveryTime || '3-5 días'}`;
-            document.getElementById('detailQuantity').textContent = detailQuantity;
-
-            const imageContainer = document.getElementById('detailImage');
-            if (product.image) {
-                imageContainer.innerHTML = `<img src="${product.image}" alt="${product.name}">`;
-            } else {
-                imageContainer.innerHTML = '<div style="font-size: 6rem;">📦</div>';
-            }
-
-            // Manejo de tallas y colores
-            document.getElementById('sizeSelector').style.display = product.sizes ? 'block' : 'none';
-            document.getElementById('colorSelector').style.display = product.colors ? 'block' : 'none';
-
-            if (product.sizes) {
-                const sizes = product.sizes.split(',').map(s => s.trim());
-                document.getElementById('sizeOptions').innerHTML = sizes.map(size => 
-                    `<div class="size-option" onclick="selectDetailSize('${size}')">${size}</div>`
-                ).join('');
-            }
-
-            if (product.colors) {
-                const colors = product.colors.split(',').map(c => c.trim());
-                document.getElementById('colorOptions').innerHTML = colors.map(color => 
-                    `<div class="color-option" onclick="selectDetailColor('${color}')">${color}</div>`
-                ).join('');
-            }
-            
-            // Limpiar estados de selección previa
-            document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
-            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-
-            updateAddToCartButton();
-            document.getElementById('productDetailModal').classList.add('active');
-        }
-
-        // REPARACIÓN CLAVE: Lógica para decidir si abrir modal o agregar directamente
-        function addToCart(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            const needsOptions = product.sizes || product.colors;
-            
-            if (needsOptions) {
-                // Si tiene opciones, abre el modal de detalle para que elija
-                openProductDetail(productId);
-            } else {
-                // Si no tiene opciones, agrega directamente con valores vacíos
-                const existingItem = cart.find(item => item.id === productId);
-                if (existingItem) {
-                    existingItem.quantity++;
-                } else {
-                    cart.push({ 
-                        ...product, 
-                        quantity: 1, 
-                        selectedSize: '', 
-                        selectedColor: '' 
-                    });
-                }
-                saveCart();
-                updateCart();
-            }
-        }
-
-        function updateQuantity(productId, change) {
-            // Encuentra el item por ID (la lógica de opciones es compleja para esta vista)
-            const itemIndex = cart.findIndex(i => i.id === productId);
-            if (itemIndex > -1) {
-                const item = cart[itemIndex];
-                item.quantity += change;
-                if (item.quantity <= 0) {
-                    removeFromCart(productId);
-                } else {
-                    saveCart();
-                    updateCart();
-                }
-            }
-        }
-
-        function removeFromCart(productId) {
-            // Esto solo elimina el primer match por ID. En una versión avanzada, debería manejar opciones.
-            const index = cart.findIndex(item => item.id === productId);
-            if (index > -1) {
-                cart.splice(index, 1);
-                saveCart();
-                updateCart();
-            }
-        }
-
-        function saveCart() {
-            localStorage.setItem('distrito110_cart', JSON.stringify(cart));
-        }
-        
-        function updateCartItemSize(index, size) {
-            cart[index].selectedSize = size;
-            saveCart();
-        }
-
-        function updateCartItemColor(index, color) {
-            cart[index].selectedColor = color;
-            saveCart();
         }
 
         function showCheckoutForm() {
@@ -1873,124 +1740,319 @@
             }
         }
         
-        // --- ADMIN FUNCTIONS ---
-        
-        function updateProfitMargin() {
-            const price = parseFloat(document.getElementById('productPrice').value) || 0;
-            const cost = parseFloat(document.getElementById('productCost').value) || 0;
-            const profit = price - cost;
-            const margin = price > 0 ? (profit / price * 100).toFixed(2) : '0.00';
-            document.getElementById('profitMargin').value = `$${profit.toLocaleString('es-CO')} (${margin}%)`;
+        // PRODUCTS & DETAIL MODAL
+        async function loadProducts() {
+            try {
+                const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                products = [];
+                querySnapshot.forEach((doc) => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+                renderProducts(currentFilter);
+                if (currentUser) renderAdminProducts();
+                checkAndShowNotification(); 
+            } catch (error) {
+                console.error('Error al cargar productos:', error);
+            }
         }
 
-        function renderAdminProducts() {
-            const list = document.getElementById('adminProductsList');
+        function renderProducts(filter = 'todos', search = '') {
+            currentFilter = filter;
+            const grid = document.getElementById('productsGrid');
+            const searchTerm = search.toLowerCase();
+            
+            let filteredProducts = products;
 
-            if (products.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #666;">No hay productos en el inventario.</p>';
+            if (filter !== 'todos') {
+                filteredProducts = filteredProducts.filter(p => p.category === filter);
+            }
+            
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (filteredProducts.length === 0) {
+                grid.innerHTML = '<div class="empty-products">No hay productos disponibles que coincidan con los filtros/búsqueda.</div>';
                 return;
             }
+            
+            grid.innerHTML = filteredProducts.map(product => {
+                const isDiscounted = product.discount > 0 && 
+                                    product.discountEndDate && 
+                                    new Date(product.discountEndDate) > new Date();
+                
+                const finalPrice = isDiscounted 
+                    ? product.price * (1 - product.discount / 100)
+                    : product.price;
 
-            list.innerHTML = products.map(product => `
-                <div class="product-card" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: default;">
-                    <div style="flex: 1;">
-                        <div class="product-name" style="font-size: 1.1rem; margin-bottom: 0.2rem;">${product.name}</div>
-                        <div style="font-size: 0.9rem; color: #666;">
-                            Precio: $${product.price.toLocaleString('es-CO')} | Costo: $${(product.providerCost || 0).toLocaleString('es-CO')} | Ganancia: <span style="color: green; font-weight: bold;">$${(product.price - (product.providerCost || 0)).toLocaleString('es-CO')}</span>
+                const priceHtml = isDiscounted 
+                    ? `<div class="price-container">
+                           <div class="product-price">${finalPrice.toLocaleString('es-CO')}</div>
+                           <div class="original-price">${product.price.toLocaleString('es-CO')}</div>
+                       </div>`
+                    : `<div class="product-price">${finalPrice.toLocaleString('es-CO')}</div>`;
+                
+                const discountBadge = isDiscounted 
+                    ? `<div class="discount-badge">-${product.discount}%</div>`
+                    : '';
+
+                return `
+                    <div class="product-card" onclick="openProductDetail('${product.id}')">
+                        ${discountBadge}
+                        <div class="product-image">
+                            ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div style="font-size: 4rem;">📦</div>'}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-details">
+                                ${product.sizes ? `Tallas disponibles<br>` : ''}
+                                ${product.colors ? `Varios colores<br>` : ''}
+                                ⏱️ ${product.deliveryTime || '3-5 días'}
+                            </div>
+                            ${priceHtml}
                         </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="order-btn btn-primary" onclick="editProduct('${product.id}')">Editar</button>
-                        <button class="order-btn btn-danger" onclick="deleteProduct('${product.id}')">Eliminar</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        async function loadOrders() {
-            try {
-                const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(q);
-                orders = [];
-                querySnapshot.forEach((doc) => {
-                    orders.push({ id: doc.id, ...doc.data() });
-                });
-                renderOrders();
-                updateDashboard();
-            } catch (error) {
-                console.error('Error al cargar pedidos:', error);
+        function filterCategory(category) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderProducts(category, document.getElementById('productSearch').value); 
+        }
+
+        function searchProducts() {
+            const searchTerm = document.getElementById('productSearch').value;
+            const activeCategory = document.querySelector('.category-btn.active').textContent.toLowerCase();
+            const filter = activeCategory === 'todos' ? 'todos' : activeCategory;
+            renderProducts(filter, searchTerm);
+        }
+        
+        function openProductDetail(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            // Lógica de cálculo de precio con descuento
+            const isDiscounted = product.discount > 0 && 
+                                product.discountEndDate && 
+                                new Date(product.discountEndDate) > new Date();
+            
+            const finalPrice = isDiscounted 
+                ? product.price * (1 - product.discount / 100)
+                : product.price;
+
+            currentDetailProduct = product;
+            detailQuantity = 1;
+            selectedDetailSize = '';
+            selectedDetailColor = '';
+
+            document.getElementById('detailTitle').textContent = product.name;
+            document.getElementById('detailPrice').innerHTML = isDiscounted 
+                ? `$${finalPrice.toLocaleString('es-CO')} <span class="original-price" style="font-size: 1rem; color: #999; text-decoration: line-through;">$${product.price.toLocaleString('es-CO')}</span>`
+                : `$${finalPrice.toLocaleString('es-CO')}`;
+
+            document.getElementById('detailDelivery').innerHTML = `<strong>🚚 Tiempo de entrega:</strong> ${product.deliveryTime || '3-5 días'}`;
+            document.getElementById('detailQuantity').textContent = detailQuantity;
+
+            const imageContainer = document.getElementById('detailImage');
+            if (product.image) {
+                imageContainer.innerHTML = `<img src="${product.image}" alt="${product.name}">`;
+            } else {
+                imageContainer.innerHTML = '<div style="font-size: 6rem;">📦</div>';
+            }
+
+            // Manejo de tallas y colores
+            document.getElementById('sizeSelector').style.display = product.sizes ? 'block' : 'none';
+            document.getElementById('colorSelector').style.display = product.colors ? 'block' : 'none';
+
+            if (product.sizes) {
+                const sizes = product.sizes.split(',').map(s => s.trim());
+                document.getElementById('sizeOptions').innerHTML = sizes.map(size => 
+                    `<div class="size-option" onclick="selectDetailSize('${size}')">${size}</div>`
+                ).join('');
+            }
+
+            if (product.colors) {
+                const colors = product.colors.split(',').map(c => c.trim());
+                document.getElementById('colorOptions').innerHTML = colors.map(color => 
+                    `<div class="color-option" onclick="selectDetailColor('${color}')">${color}</div>`
+                ).join('');
+            }
+            
+            // Limpiar estados de selección previa
+            document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+
+            updateAddToCartButton();
+            document.getElementById('productDetailModal').classList.add('active');
+        }
+
+        function closeProductDetail() {
+            document.getElementById('productDetailModal').classList.remove('active');
+            currentDetailProduct = null;
+        }
+
+        function selectDetailSize(size) {
+            selectedDetailSize = size;
+            document.querySelectorAll('.size-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.textContent === size) opt.classList.add('selected');
+            });
+            updateAddToCartButton();
+        }
+
+        function selectDetailColor(color) {
+            selectedDetailColor = color;
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.textContent === color) opt.classList.add('selected');
+            });
+            updateAddToCartButton();
+        }
+
+        function changeDetailQuantity(change) {
+            detailQuantity = Math.max(1, detailQuantity + change);
+            document.getElementById('detailQuantity').textContent = detailQuantity;
+        }
+
+        function updateAddToCartButton() {
+            const btn = document.getElementById('addToCartDetailBtn');
+            const needsSize = currentDetailProduct?.sizes;
+            const needsColor = currentDetailProduct?.colors;
+            
+            if ((needsSize && !selectedDetailSize) || (needsColor && !selectedDetailColor)) {
+                btn.disabled = true;
+                btn.textContent = 'Selecciona ' + (needsSize && !selectedDetailSize ? 'talla' : 'color');
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Agregar al Carrito';
             }
         }
 
-        function getStatusText(status) {
-            switch (status) {
-                case 'nuevo': return 'Nuevo';
-                case 'comprado': return 'Comprado (Proveedor)';
-                case 'encamino': return 'En camino (Cliente)';
-                case 'entregado': return 'Entregado';
-                case 'cancelado': return 'Cancelado';
-                default: return 'Desconocido';
+        function addToCartFromDetail() {
+            if (!currentDetailProduct) return;
+
+            // Lógica para manejar el precio con descuento al agregar
+            const isDiscounted = currentDetailProduct.discount > 0 && 
+                                currentDetailProduct.discountEndDate && 
+                                new Date(currentDetailProduct.discountEndDate) > new Date();
+            const finalPrice = isDiscounted 
+                ? currentDetailProduct.price * (1 - currentDetailProduct.discount / 100)
+                : currentDetailProduct.price;
+
+            for (let i = 0; i < detailQuantity; i++) {
+                const existingItem = cart.find(item => 
+                    item.id === currentDetailProduct.id && 
+                    item.selectedSize === selectedDetailSize && 
+                    item.selectedColor === selectedDetailColor
+                );
+
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({
+                        ...currentDetailProduct,
+                        price: finalPrice, // Guarda el precio final de la oferta
+                        originalPrice: currentDetailProduct.price, // Guarda el precio original para referencia
+                        quantity: 1,
+                        selectedSize: selectedDetailSize,
+                        selectedColor: selectedDetailColor
+                    });
+                }
+            }
+
+            saveCart();
+            updateCart();
+            closeProductDetail();
+            
+            const btn = document.getElementById('addToCartDetailBtn');
+            btn.textContent = '✓ Agregado!';
+            btn.style.background = '#28a745';
+            setTimeout(() => {
+                btn.textContent = 'Agregar al Carrito';
+                btn.style.background = '';
+            }, 1500);
+        }
+
+        // --- LAS OTRAS FUNCIONES ADMINISTRATIVAS DEBEN ESTAR AQUÍ ---
+        // (renderAdminProducts, updateDashboard, renderOrders, etc.)
+
+        // --- NOTIFICATION FUNCTIONS ---
+        
+        function checkAndShowNotification() {
+            const lastNotificationDay = localStorage.getItem('last_notification_day');
+            const today = new Date().toDateString();
+            
+            if (lastNotificationDay === today) return;
+
+            const discountedProduct = products.find(p => 
+                p.discount > 0 && 
+                p.discountEndDate && 
+                new Date(p.discountEndDate) > new Date()
+            );
+
+            if (discountedProduct) {
+                const endDate = new Date(discountedProduct.discountEndDate).toLocaleDateString('es-CO');
+                document.getElementById('notificationText').textContent = 
+                    `¡Lanzamiento de oferta! Nuevo producto: ${discountedProduct.name} con un ${discountedProduct.discount}% de descuento. ¡Aprovecha!`;
+                document.getElementById('notificationEndDate').textContent = `Oferta válida hasta el: ${endDate}`;
+                document.getElementById('notificationModal').classList.add('active');
             }
         }
         
-        function renderOrders() {
-            const table = document.getElementById('ordersTable');
-            const filter = document.getElementById('orderFilter')?.value || 'todos';
-            const filteredOrders = filter === 'todos' ? orders : orders.filter(o => o.status === filter);
-
-            if (filteredOrders.length === 0) {
-                table.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">No hay pedidos</div>';
-                return;
-            }
-
-            table.innerHTML = filteredOrders.map(order => `
-                <div class="order-item">
-                    <div class="order-header">
-                        <span class="order-id">#${order.id.slice(-6).toUpperCase()}</span>
-                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
-                    </div>
-                    <div class="order-details-grid">
-                        <div><strong>Cliente:</strong> ${order.customer.name}</div>
-                        <div><strong>Tel:</strong> ${order.customer.phone}</div>
-                        <div><strong>Ciudad:</strong> ${order.customer.city}</div>
-                        <div><strong>Total:</strong> $${order.total.toLocaleString('es-CO')}</div>
-                        <div><strong>Ganancia:</strong> <span style="color: green; font-weight: bold;">$${(order.profit || 0).toLocaleString('es-CO')}</span></div>
-                    </div>
-                    
-                    <div style="margin-bottom: 1rem;">
-                         <button class="order-btn btn-primary" style="padding: 0.5rem 1rem;" onclick="toggleOrderDetails('${order.id}')">
-                            Ver/Ocultar Productos
-                        </button>
-                    </div>
-
-                    <div class="order-items-detail hidden" id="detail-${order.id}">
-                        <strong>Productos en el Pedido:</strong>
-                        <ul>
-                            ${order.items.map(item => `
-                                <li>${item.quantity}x ${item.name} 
-                                    ${item.selectedSize ? `(T: ${item.selectedSize})` : ''} 
-                                    ${item.selectedColor ? `(C: ${item.selectedColor})` : ''}
-                                    - $${(item.price * item.quantity).toLocaleString('es-CO')}
-                                </li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                    
-                    <div class="order-actions" style="margin-top: 1rem;">
-                        ${order.status !== 'comprado' ? `<button class="order-btn btn-primary" onclick="changeOrderStatus('${order.id}', 'comprado')">Marcar Comprado</button>` : ''}
-                        ${order.status !== 'encamino' ? `<button class="order-btn btn-primary" onclick="changeOrderStatus('${order.id}', 'encamino')">Marcar En Camino</button>` : ''}
-                        ${order.status !== 'entregado' ? `<button class="order-btn btn-success" onclick="changeOrderStatus('${order.id}', 'entregado')">Marcar Entregado</button>` : ''}
-                        ${order.status !== 'cancelado' ? `<button class="order-btn btn-danger" onclick="changeOrderStatus('${order.id}', 'cancelado')">Cancelar</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
+        function closeNotificationModal() {
+            document.getElementById('notificationModal').classList.remove('active');
+            localStorage.setItem('last_notification_day', new Date().toDateString());
         }
 
-        // --- LAS OTRAS FUNCIONES ADMINISTRATIVAS Y DE PRODUCTO DEBEN ESTAR AQUÍ ---
-        // (Por ejemplo: updateDashboard, switchTab, filterOrders, changeOrderStatus, 
-        // showAddProduct, closeProductForm, handleImageSelect, editProduct, deleteProduct, etc.)
+        // --- LÓGICA DE FIREBASE Y VINCULACIÓN ---
 
-        // --- FINALIZACIÓN ---
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            
+            // Lógica de visibilidad del Administrador
+            if (user) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('logoutBtn').classList.add('hidden');
+            }
+            
+            loadProducts();
+            if (user) loadOrders();
+        });
+
+
+        // --- VINCULACIÓN DE EVENT LISTENERS (SOLUCIÓN ReferenceError) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const cartButton = document.getElementById('cartButton');
+            const adminButton = document.getElementById('adminButton');
+            const closeCartButton = document.getElementById('closeCartButton');
+            const closeAdminButton = document.getElementById('closeAdminButton');
+
+            if (cartButton) cartButton.addEventListener('click', toggleCart);
+            if (adminButton) adminButton.addEventListener('click', toggleAdmin);
+            if (closeCartButton) closeCartButton.addEventListener('click', toggleCart);
+            if (closeAdminButton) closeAdminButton.addEventListener('click', toggleAdmin);
+            
+            const priceInput = document.getElementById('productPrice');
+            const costInput = document.getElementById('productCost');
+            if (priceInput) priceInput.addEventListener('input', updateProfitMargin);
+            if (costInput) costInput.addEventListener('input', updateProfitMargin);
+            
+            // Eliminamos la clase loading aquí para asegurar que aparezca
+            document.body.classList.remove('loading');
+            document.body.classList.add('loaded');
+        });
+
+        // Aseguramos que la inicialización del carrito se haga al final del script
         updateCart();
     </script>
 </body>
