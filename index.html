@@ -86,6 +86,21 @@
         .nav-links a:hover {
             color: var(--amarillo-mostaza);
         }
+        
+        /* New Search Input */
+        #productSearch {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background-color: var(--blanco);
+            color: var(--negro);
+            transition: all 0.3s;
+        }
+        #productSearch:focus {
+            border-color: var(--rojo);
+            box-shadow: 0 0 5px rgba(220, 20, 60, 0.5);
+        }
 
         .cart-btn, .admin-btn, .logout-btn {
             background: var(--rojo);
@@ -220,12 +235,28 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transition: all 0.3s;
             cursor: pointer;
+            position: relative; /* Para el badge */
         }
 
         .product-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 15px 30px rgba(0,0,0,0.2);
         }
+        
+        .discount-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--rojo);
+            color: var(--blanco);
+            padding: 0.4rem 0.8rem;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
 
         .product-image {
             width: 100%;
@@ -261,14 +292,29 @@
             line-height: 1.6;
         }
 
+        .price-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
         .product-price {
             font-size: 1.5rem;
             color: var(--rojo);
             font-weight: bold;
-            margin-bottom: 1rem;
         }
 
         .product-price::before {
+            content: '$';
+        }
+
+        .original-price {
+            font-size: 1rem;
+            color: #999;
+            text-decoration: line-through;
+        }
+        .original-price::before {
             content: '$';
         }
 
@@ -627,7 +673,7 @@
             align-items: center;
             margin-bottom: 1rem;
         }
-
+        
         .order-id {
             font-weight: bold;
             font-size: 1.1rem;
@@ -671,6 +717,26 @@
             gap: 1rem;
             margin-bottom: 1rem;
         }
+        
+        .order-items-detail {
+            border-top: 1px solid #ddd;
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .order-items-detail ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .order-items-detail ul li {
+            margin-bottom: 0.3rem;
+            background: #e9e9e9;
+            padding: 0.4rem;
+            border-radius: 4px;
+        }
+
 
         .order-actions {
             display: flex;
@@ -1000,6 +1066,35 @@
         .error-message.active {
             display: block;
         }
+        
+        /* New Notification Modal Style */
+        #notificationModal .modal-content {
+            max-width: 400px;
+            background: linear-gradient(145deg, var(--rojo), #b8112c);
+            color: var(--blanco);
+            text-align: center;
+        }
+        
+        #notificationModal .modal-header {
+            background: transparent;
+            border-bottom: none;
+            padding: 1rem;
+        }
+        
+        #notificationModal .notification-body {
+            padding: 2rem 1.5rem;
+        }
+        
+        #notificationModal .notification-body h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--amarillo-mostaza);
+        }
+        
+        #notificationModal .notification-body p {
+            font-size: 1.1rem;
+        }
+
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -1070,6 +1165,13 @@
         <nav class="navbar">
             <div class="container">
                 <a href="#" class="logo">DISTRITO 110</a>
+                
+                <div style="flex-grow: 1; max-width: 400px; margin: 0 2rem;">
+                    <input type="text" id="productSearch" placeholder="Buscar productos por nombre..." 
+                           oninput="searchProducts()" 
+                           style="width: 100%; padding: 0.5rem; border-radius: 5px; border: none;">
+                </div>
+                
                 <ul class="nav-links">
                     <li><a href="#inicio">Inicio</a></li>
                     <li><a href="#productos">Productos</a></li>
@@ -1305,6 +1407,21 @@
                         <input type="number" id="productCost" required placeholder="65000" min="0">
                     </div>
                 </div>
+                
+                <div style="border: 1px dashed var(--rojo); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h4 style="margin-bottom: 1rem; color: var(--rojo);">Opciones de Descuento (Opcional)</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Porcentaje de Descuento (%)</label>
+                            <input type="number" id="productDiscount" min="0" max="100" placeholder="Ej: 15">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Fin de Descuento</label>
+                            <input type="date" id="discountEndDate">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label>Margen de Ganancia</label>
                     <input type="text" id="profitMargin" readonly style="background: #f0f0f0; font-weight: bold; color: green;">
@@ -1321,6 +1438,23 @@
             </form>
         </div>
     </div>
+    
+    <div class="modal" id="notificationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeNotificationModal()">×</button>
+            </div>
+            <div class="notification-body">
+                <h3>¡NUEVOS DESCUENTOS!</h3>
+                <p id="notificationText">Descubre nuestro nuevo producto con un descuento especial por tiempo limitado.</p>
+                <p id="notificationEndDate" style="font-weight: bold; margin-top: 1rem;"></p>
+                <a href="#productos" class="btn" style="margin-top: 2rem;" onclick="closeNotificationModal()">
+                    Ver Ofertas
+                </a>
+            </div>
+        </div>
+    </div>
+
 
     <a href="https://wa.me/573189377107?text=Hola,%20necesito%20ayuda" class="whatsapp-btn" target="_blank">
         <svg viewBox="0 0 32 32">
@@ -1355,11 +1489,13 @@
         let currentImageData = null;
         let currentFilter = 'todos';
 
+        // Global functions for HTML
         window.login = login;
         window.logout = logout;
         window.toggleCart = toggleCart;
         window.toggleAdmin = toggleAdmin;
         window.filterCategory = filterCategory;
+        window.searchProducts = searchProducts; // NEW
         window.addToCart = addToCart;
         window.updateQuantity = updateQuantity;
         window.removeFromCart = removeFromCart;
@@ -1381,6 +1517,8 @@
         window.selectDetailSize = selectDetailSize;
         window.selectDetailColor = selectDetailColor;
         window.changeOrderStatus = changeOrderStatus;
+        window.toggleOrderDetails = toggleOrderDetails; // NEW
+        window.closeNotificationModal = closeNotificationModal; // NEW
 
         let currentDetailProduct = null;
         let detailQuantity = 1;
@@ -1400,6 +1538,8 @@
             loadProducts();
             if (user) loadOrders();
         });
+
+        // --- AUTH FUNCTIONS ---
 
         async function login(event) {
             event.preventDefault();
@@ -1427,6 +1567,8 @@
             location.reload();
         }
 
+        // --- PRODUCT FUNCTIONS ---
+
         async function loadProducts() {
             try {
                 const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
@@ -1437,510 +1579,102 @@
                 });
                 renderProducts(currentFilter);
                 if (currentUser) renderAdminProducts();
+                checkAndShowNotification(); // NEW: Check for discounted products
             } catch (error) {
                 console.error('Error al cargar productos:', error);
             }
         }
 
-        async function loadOrders() {
-            try {
-                const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(q);
-                orders = [];
-                querySnapshot.forEach((doc) => {
-                    orders.push({ id: doc.id, ...doc.data() });
-                });
-                renderOrders();
-                updateDashboard();
-            } catch (error) {
-                console.error('Error al cargar pedidos:', error);
-            }
-        }
-
-        function renderProducts(filter = 'todos') {
+        function renderProducts(filter = 'todos', search = '') {
             currentFilter = filter;
             const grid = document.getElementById('productsGrid');
+            const searchTerm = search.toLowerCase();
             
-            if (products.length === 0) {
-                grid.innerHTML = '<div class="empty-products">No hay productos disponibles</div>';
-                return;
+            let filteredProducts = products;
+
+            // 1. Filter by Category
+            if (filter !== 'todos') {
+                filteredProducts = filteredProducts.filter(p => p.category === filter);
             }
-
-            const filteredProducts = filter === 'todos' ? products : products.filter(p => p.category === filter);
-
+            
+            // 2. Filter by Search Term (NEW)
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchTerm)
+                );
+            }
+            
             if (filteredProducts.length === 0) {
-                grid.innerHTML = '<div class="empty-products">No hay productos en esta categoría</div>';
+                grid.innerHTML = '<div class="empty-products">No hay productos disponibles que coincidan con los filtros/búsqueda.</div>';
                 return;
             }
+            
+            grid.innerHTML = filteredProducts.map(product => {
+                const isDiscounted = product.discount > 0 && 
+                                    product.discountEndDate && 
+                                    new Date(product.discountEndDate) > new Date();
+                
+                const finalPrice = isDiscounted 
+                    ? product.price * (1 - product.discount / 100)
+                    : product.price;
 
-            grid.innerHTML = filteredProducts.map(product => `
-                <div class="product-card" onclick="openProductDetail('${product.id}')">
-                    <div class="product-image">
-                        ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div style="font-size: 4rem;">📦</div>'}
-                    </div>
-                    <div class="product-info">
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-details">
-                            ${product.sizes ? `Tallas disponibles<br>` : ''}
-                            ${product.colors ? `Varios colores<br>` : ''}
-                            ⏱️ ${product.deliveryTime || '3-5 días'}
+                const priceHtml = isDiscounted 
+                    ? `<div class="price-container">
+                           <div class="product-price">${finalPrice.toLocaleString('es-CO')}</div>
+                           <div class="original-price">${product.price.toLocaleString('es-CO')}</div>
+                       </div>`
+                    : `<div class="product-price">${finalPrice.toLocaleString('es-CO')}</div>`;
+                
+                const discountBadge = isDiscounted 
+                    ? `<div class="discount-badge">-${product.discount}%</div>`
+                    : '';
+
+                return `
+                    <div class="product-card" onclick="openProductDetail('${product.id}')">
+                        ${discountBadge}
+                        <div class="product-image">
+                            ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div style="font-size: 4rem;">📦</div>'}
                         </div>
-                        <div class="product-price">${product.price.toLocaleString('es-CO')}</div>
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-details">
+                                ${product.sizes ? `Tallas disponibles<br>` : ''}
+                                ${product.colors ? `Varios colores<br>` : ''}
+                                ⏱️ ${product.deliveryTime || '3-5 días'}
+                            </div>
+                            ${priceHtml}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function filterCategory(category) {
             document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
-            renderProducts(category);
+            renderProducts(category, document.getElementById('productSearch').value); // Apply search term too
         }
 
-        function openProductDetail(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            currentDetailProduct = product;
-            detailQuantity = 1;
-            selectedDetailSize = '';
-            selectedDetailColor = '';
-
-            document.getElementById('detailTitle').textContent = product.name;
-            document.getElementById('detailPrice').textContent = `${product.price.toLocaleString('es-CO')}`;
-            document.getElementById('detailDelivery').innerHTML = `<strong>🚚 Tiempo de entrega:</strong> ${product.deliveryTime || '3-5 días'}`;
-            document.getElementById('detailQuantity').textContent = detailQuantity;
-
-            const imageContainer = document.getElementById('detailImage');
-            if (product.image) {
-                imageContainer.innerHTML = `<img src="${product.image}" alt="${product.name}">`;
-            } else {
-                imageContainer.innerHTML = '<div style="font-size: 6rem;">📦</div>';
-            }
-
-            if (product.sizes) {
-                document.getElementById('sizeSelector').style.display = 'block';
-                const sizes = product.sizes.split(',').map(s => s.trim());
-                document.getElementById('sizeOptions').innerHTML = sizes.map(size => 
-                    `<div class="size-option" onclick="selectDetailSize('${size}')">${size}</div>`
-                ).join('');
-            } else {
-                document.getElementById('sizeSelector').style.display = 'none';
-            }
-
-            if (product.colors) {
-                document.getElementById('colorSelector').style.display = 'block';
-                const colors = product.colors.split(',').map(c => c.trim());
-                document.getElementById('colorOptions').innerHTML = colors.map(color => 
-                    `<div class="color-option" onclick="selectDetailColor('${color}')">${color}</div>`
-                ).join('');
-            } else {
-                document.getElementById('colorSelector').style.display = 'none';
-            }
-
-            updateAddToCartButton();
-            document.getElementById('productDetailModal').classList.add('active');
+        // NEW: Search Products Function
+        function searchProducts() {
+            const searchTerm = document.getElementById('productSearch').value;
+            const activeCategory = document.querySelector('.category-btn.active').textContent.toLowerCase();
+            const filter = activeCategory === 'todos' ? 'todos' : activeCategory;
+            renderProducts(filter, searchTerm);
         }
 
-        function closeProductDetail() {
-            document.getElementById('productDetailModal').classList.remove('active');
-            currentDetailProduct = null;
-        }
+        // --- PRODUCT FORM AND CRUD ---
 
-        function selectDetailSize(size) {
-            selectedDetailSize = size;
-            document.querySelectorAll('.size-option').forEach(opt => {
-                opt.classList.remove('selected');
-                if (opt.textContent === size) opt.classList.add('selected');
-            });
-            updateAddToCartButton();
-        }
+        // Bind for updating profit margin
+        document.getElementById('productPrice').addEventListener('input', updateProfitMargin);
+        document.getElementById('productCost').addEventListener('input', updateProfitMargin);
 
-        function selectDetailColor(color) {
-            selectedDetailColor = color;
-            document.querySelectorAll('.color-option').forEach(opt => {
-                opt.classList.remove('selected');
-                if (opt.textContent === color) opt.classList.add('selected');
-            });
-            updateAddToCartButton();
-        }
-
-        function changeDetailQuantity(change) {
-            detailQuantity = Math.max(1, detailQuantity + change);
-            document.getElementById('detailQuantity').textContent = detailQuantity;
-        }
-
-        function updateAddToCartButton() {
-            const btn = document.getElementById('addToCartDetailBtn');
-            const needsSize = currentDetailProduct?.sizes;
-            const needsColor = currentDetailProduct?.colors;
-            
-            if ((needsSize && !selectedDetailSize) || (needsColor && !selectedDetailColor)) {
-                btn.disabled = true;
-                btn.textContent = 'Selecciona ' + (needsSize && !selectedDetailSize ? 'talla' : 'color');
-            } else {
-                btn.disabled = false;
-                btn.textContent = 'Agregar al Carrito';
-            }
-        }
-
-        function addToCartFromDetail() {
-            if (!currentDetailProduct) return;
-
-            for (let i = 0; i < detailQuantity; i++) {
-                const existingItem = cart.find(item => 
-                    item.id === currentDetailProduct.id && 
-                    item.selectedSize === selectedDetailSize && 
-                    item.selectedColor === selectedDetailColor
-                );
-
-                if (existingItem) {
-                    existingItem.quantity++;
-                } else {
-                    cart.push({
-                        ...currentDetailProduct,
-                        quantity: 1,
-                        selectedSize: selectedDetailSize,
-                        selectedColor: selectedDetailColor
-                    });
-                }
-            }
-
-            saveCart();
-            updateCart();
-            closeProductDetail();
-            
-            const btn = document.getElementById('addToCartDetailBtn');
-            btn.textContent = '✓ Agregado!';
-            btn.style.background = '#28a745';
-            setTimeout(() => {
-                btn.textContent = 'Agregar al Carrito';
-                btn.style.background = '';
-            }, 1500);
-        }
-
-        function addToCart(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            const existingItem = cart.find(item => item.id === productId);
-            if (existingItem) {
-                existingItem.quantity++;
-            } else {
-                cart.push({ ...product, quantity: 1, selectedSize: '', selectedColor: '' });
-            }
-            saveCart();
-            updateCart();
-        }
-
-        function updateCart() {
-            const cartCount = document.getElementById('cartCount');
-            const cartItems = document.getElementById('cartItems');
-            const cartTotal = document.getElementById('cartTotal');
-            const showCheckoutBtn = document.getElementById('showCheckoutBtn');
-
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            cartCount.textContent = totalItems;
-
-            if (cart.length === 0) {
-                cartItems.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Tu carrito está vacío</div>';
-                cartTotal.textContent = '0';
-                showCheckoutBtn.style.display = 'none';
-                return;
-            }
-
-            cartItems.innerHTML = cart.map((item, index) => `
-                <div class="cart-item">
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold;">${item.name}</div>
-                        <div style="color: var(--rojo); font-weight: bold;">$${item.price.toLocaleString('es-CO')}</div>
-                        ${item.sizes ? `
-                            <select onchange="updateCartItemSize(${index}, this.value)" style="margin-top: 0.5rem; padding: 0.3rem;">
-                                <option value="">Seleccionar talla</option>
-                                ${item.sizes.split(',').map(s => `<option value="${s.trim()}" ${item.selectedSize === s.trim() ? 'selected' : ''}>${s.trim()}</option>`).join('')}
-                            </select>
-                        ` : ''}
-                        ${item.colors ? `
-                            <select onchange="updateCartItemColor(${index}, this.value)" style="margin-top: 0.5rem; padding: 0.3rem;">
-                                <option value="">Seleccionar color</option>
-                                ${item.colors.split(',').map(c => `<option value="${c.trim()}" ${item.selectedColor === c.trim() ? 'selected' : ''}>${c.trim()}</option>`).join('')}
-                            </select>
-                        ` : ''}
-                    </div>
-                    <div class="quantity-controls">
-                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
-                        <span style="font-weight: bold; min-width: 30px; text-align: center;">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
-                    </div>
-                    <button class="remove-btn" onclick="removeFromCart('${item.id}')">Eliminar</button>
-                </div>
-            `).join('');
-
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            cartTotal.textContent = total.toLocaleString('es-CO');
-            showCheckoutBtn.style.display = 'block';
-        }
-
-        window.updateCartItemSize = function(index, size) {
-            cart[index].selectedSize = size;
-            saveCart();
-        };
-
-        window.updateCartItemColor = function(index, color) {
-            cart[index].selectedColor = color;
-            saveCart();
-        };
-
-        function updateQuantity(productId, change) {
-            const item = cart.find(i => i.id === productId);
-            if (item) {
-                item.quantity += change;
-                if (item.quantity <= 0) {
-                    removeFromCart(productId);
-                } else {
-                    saveCart();
-                    updateCart();
-                }
-            }
-        }
-
-        function removeFromCart(productId) {
-            cart = cart.filter(item => item.id !== productId);
-            saveCart();
-            updateCart();
-        }
-
-        function saveCart() {
-            localStorage.setItem('distrito110_cart', JSON.stringify(cart));
-        }
-
-        function toggleCart() {
-            document.getElementById('cartModal').classList.toggle('active');
-            document.getElementById('checkoutForm').style.display = 'none';
-            document.getElementById('showCheckoutBtn').style.display = cart.length > 0 ? 'block' : 'none';
-        }
-
-        function showCheckoutForm() {
-            document.getElementById('checkoutForm').style.display = 'block';
-            document.getElementById('showCheckoutBtn').style.display = 'none';
-        }
-
-        function selectPayment(method) {
-            selectedPayment = method;
-            document.querySelectorAll('.payment-method').forEach(pm => pm.classList.remove('selected'));
-            event.target.closest('.payment-method').classList.add('selected');
-            document.getElementById('checkoutBtn').disabled = false;
-        }
-
-        async function processCheckout() {
-            if (!selectedPayment) {
-                alert('Selecciona un método de pago');
-                return;
-            }
-
-            const name = document.getElementById('customerName').value;
-            const phone = document.getElementById('customerPhone').value;
-            const city = document.getElementById('customerCity').value;
-            const address = document.getElementById('customerAddress').value;
-
-            if (!name || !phone || !city || !address) {
-                alert('Por favor completa todos los campos');
-                return;
-            }
-
-            // Validation for product options
-            const incompleteItems = cart.filter(item => 
-                (item.sizes && !item.selectedSize) || 
-                (item.colors && !item.selectedColor)
-            );
-
-            if (incompleteItems.length > 0) {
-                const names = incompleteItems.map(item => item.name).join(', ');
-                alert(`Debes seleccionar la talla y/o color para: ${names}`);
-                return;
-            }
-
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const providerCost = cart.reduce((sum, item) => sum + ((item.providerCost || 0) * item.quantity), 0);
-
-            try {
-                const orderData = {
-                    items: cart,
-                    customer: { name, phone, city, address },
-                    paymentMethod: selectedPayment,
-                    total,
-                    providerCost,
-                    profit: total - providerCost,
-                    status: 'nuevo',
-                    createdAt: Timestamp.now()
-                };
-
-                await addDoc(collection(db, 'orders'), orderData);
-
-                const message = `¡Hola! Quiero hacer un pedido:\n\n${cart.map(item => `${item.quantity}x ${item.name}${item.selectedSize ? ` - Talla: ${item.selectedSize}` : ''}${item.selectedColor ? ` - Color: ${item.selectedColor}` : ''}`).join('\n')}\n\nTotal: $${total.toLocaleString('es-CO')}\nPago: ${selectedPayment}\n\nDirección: ${address}\nCiudad: ${city}`;
-                
-                // NOTE: The original code used a WhatsApp number that was likely meant for the admin
-                // window.open(`https://wa.me/573157138059?text=${encodeURIComponent(message)}`, '_blank');
-                // Reverting to the contact number shown in the Contact Section for the customer, but as a generic placeholder:
-                window.open(`https://wa.me/573189377107?text=${encodeURIComponent(message)}`, '_blank');
-
-
-                alert('¡Pedido realizado! Te contactaremos por WhatsApp');
-                cart = [];
-                saveCart();
-                updateCart();
-                toggleCart();
-                selectedPayment = null;
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al procesar el pedido');
-            }
-        }
-
-        function toggleAdmin() {
-            if (!currentUser) {
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('mainApp').classList.add('hidden');
-                return;
-            }
-            document.getElementById('adminModal').classList.toggle('active');
-            if (document.getElementById('adminModal').classList.contains('active')) {
-                loadOrders();
-            }
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById(tab + 'Content').classList.add('active');
-        }
-
-        function updateDashboard() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const todayOrders = orders.filter(o => o.createdAt && o.createdAt.toDate() >= today);
-            const todaySales = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-            const todayProfit = todayOrders.reduce((sum, o) => sum + (o.profit || 0), 0);
-            const newOrders = orders.filter(o => o.status === 'nuevo').length;
-
-            document.getElementById('dashboardStats').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-value">$${todaySales.toLocaleString('es-CO')}</div>
-                    <div class="stat-label">Ventas Hoy</div>
-                </div>
-                <div class="stat-card green">
-                    <div class="stat-value">$${todayProfit.toLocaleString('es-CO')}</div>
-                    <div class="stat-label">Ganancia Hoy</div>
-                </div>
-                <div class="stat-card red">
-                    <div class="stat-value">${newOrders}</div>
-                    <div class="stat-label">Pedidos Nuevos</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${orders.length}</div>
-                    <div class="stat-label">Total Pedidos</div>
-                </div>
-            `;
-        }
-        
-        function getStatusText(status) {
-            switch (status) {
-                case 'nuevo': return 'Nuevo';
-                case 'comprado': return 'Comprado (Proveedor)';
-                case 'encamino': return 'En camino (Cliente)';
-                case 'entregado': return 'Entregado';
-                case 'cancelado': return 'Cancelado';
-                default: return 'Desconocido';
-            }
-        }
-
-        function renderOrders() {
-            const table = document.getElementById('ordersTable');
-            const filter = document.getElementById('orderFilter')?.value || 'todos';
-            const filteredOrders = filter === 'todos' ? orders : orders.filter(o => o.status === filter);
-
-            if (filteredOrders.length === 0) {
-                table.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">No hay pedidos</div>';
-                return;
-            }
-
-            table.innerHTML = filteredOrders.map(order => `
-                <div class="order-item">
-                    <div class="order-header">
-                        <span class="order-id">#${order.id.slice(-6).toUpperCase()}</span>
-                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
-                    </div>
-                    <div class="order-details">
-                        <div><strong>Cliente:</strong> ${order.customer.name}</div>
-                        <div><strong>Tel:</strong> ${order.customer.phone}</div>
-                        <div><strong>Ciudad:</strong> ${order.customer.city}</div>
-                        <div><strong>Total:</strong> $${order.total.toLocaleString('es-CO')}</div>
-                        <div><strong>Ganancia:</strong> <span style="color: green; font-weight: bold;">$${(order.profit || 0).toLocaleString('es-CO')}</span></div>
-                    </div>
-                    <div style="margin-bottom: 1rem; border-top: 1px solid #ddd; padding-top: 1rem;">
-                        <strong>Productos:</strong>
-                        <ul>
-                            ${order.items.map(item => `
-                                <li>${item.quantity}x ${item.name} 
-                                    ${item.selectedSize ? `(T: ${item.selectedSize})` : ''} 
-                                    ${item.selectedColor ? `(C: ${item.selectedColor})` : ''}
-                                    - $${(item.price * item.quantity).toLocaleString('es-CO')}
-                                </li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                    <div class="order-actions">
-                        ${order.status !== 'comprado' ? `<button class="order-btn btn-primary" onclick="changeOrderStatus('${order.id}', 'comprado')">Marcar Comprado</button>` : ''}
-                        ${order.status !== 'encamino' ? `<button class="order-btn btn-primary" onclick="changeOrderStatus('${order.id}', 'encamino')">Marcar En Camino</button>` : ''}
-                        ${order.status !== 'entregado' ? `<button class="order-btn btn-success" onclick="changeOrderStatus('${order.id}', 'entregado')">Marcar Entregado</button>` : ''}
-                        ${order.status !== 'cancelado' ? `<button class="order-btn btn-danger" onclick="changeOrderStatus('${order.id}', 'cancelado')">Cancelar</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function filterOrders() {
-            renderOrders();
-        }
-
-        async function changeOrderStatus(orderId, newStatus) {
-            if (!confirm(`¿Estás seguro de cambiar el estado del pedido #${orderId.slice(-6).toUpperCase()} a ${getStatusText(newStatus)}?`)) return;
-
-            try {
-                const orderRef = doc(db, 'orders', orderId);
-                await updateDoc(orderRef, { status: newStatus });
-                alert('Estado del pedido actualizado.');
-                await loadOrders(); // Recargar pedidos y dashboard
-            } catch (error) {
-                console.error('Error al actualizar estado:', error);
-                alert('Hubo un error al actualizar el estado.');
-            }
-        }
-
-        function renderAdminProducts() {
-            const list = document.getElementById('adminProductsList');
-
-            if (products.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #666;">No hay productos en el inventario.</p>';
-                return;
-            }
-
-            list.innerHTML = products.map(product => `
-                <div class="product-card" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: default;">
-                    <div style="flex: 1;">
-                        <div class="product-name" style="font-size: 1.1rem; margin-bottom: 0.2rem;">${product.name}</div>
-                        <div style="font-size: 0.9rem; color: #666;">
-                            Precio: $${product.price.toLocaleString('es-CO')} | Costo: $${(product.providerCost || 0).toLocaleString('es-CO')} | Ganancia: <span style="color: green; font-weight: bold;">$${(product.price - (product.providerCost || 0)).toLocaleString('es-CO')}</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="order-btn btn-primary" onclick="editProduct('${product.id}')">Editar</button>
-                        <button class="order-btn btn-danger" onclick="deleteProduct('${product.id}')">Eliminar</button>
-                    </div>
-                </div>
-            `).join('');
+        function updateProfitMargin() {
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            const cost = parseFloat(document.getElementById('productCost').value) || 0;
+            const profit = price - cost;
+            const margin = price > 0 ? (profit / price * 100).toFixed(2) : '0.00';
+            document.getElementById('profitMargin').value = `$${profit.toLocaleString('es-CO')} (${margin}%)`;
         }
 
         function showAddProduct() {
@@ -1954,33 +1688,36 @@
             document.getElementById('productFormModal').classList.add('active');
         }
 
-        function closeProductForm() {
-            document.getElementById('productFormModal').classList.remove('active');
-        }
+        function editProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
 
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('imagePreview').src = e.target.result;
-                    document.getElementById('imagePreview').style.display = 'block';
-                    currentImageData = e.target.result; // Base64 data for simplicity
-                }
-                reader.readAsDataURL(file);
+            editingProductId = productId;
+            currentImageData = product.image;
+
+            document.getElementById('formTitle').textContent = 'Editar Producto';
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productDelivery').value = product.deliveryTime;
+            document.getElementById('productSizes').value = product.sizes;
+            document.getElementById('productColors').value = product.colors;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productCost').value = product.providerCost || 0;
+            
+            // NEW: Discount fields
+            document.getElementById('productDiscount').value = product.discount || '';
+            document.getElementById('discountEndDate').value = product.discountEndDate || '';
+
+            updateProfitMargin();
+
+            if (product.image) {
+                document.getElementById('imagePreview').src = product.image;
+                document.getElementById('imagePreview').style.display = 'block';
+            } else {
+                document.getElementById('imagePreview').style.display = 'none';
             }
-        }
-        
-        // Calculate Profit Margin on input change
-        document.getElementById('productPrice').addEventListener('input', updateProfitMargin);
-        document.getElementById('productCost').addEventListener('input', updateProfitMargin);
 
-        function updateProfitMargin() {
-            const price = parseFloat(document.getElementById('productPrice').value) || 0;
-            const cost = parseFloat(document.getElementById('productCost').value) || 0;
-            const profit = price - cost;
-            const margin = price > 0 ? (profit / price * 100).toFixed(2) : '0.00';
-            document.getElementById('profitMargin').value = `$${profit.toLocaleString('es-CO')} (${margin}%)`;
+            document.getElementById('productFormModal').classList.add('active');
         }
 
         async function saveProduct(event) {
@@ -1994,9 +1731,21 @@
                 colors: document.getElementById('productColors').value,
                 price: parseFloat(document.getElementById('productPrice').value),
                 providerCost: parseFloat(document.getElementById('productCost').value),
-                image: currentImageData || null, // Using currentImageData (Base64 or existing URL)
+                image: currentImageData || null,
+                
+                // NEW: Discount data
+                discount: parseFloat(document.getElementById('productDiscount').value) || 0,
+                discountEndDate: document.getElementById('discountEndDate').value || null,
+                
                 createdAt: Timestamp.now()
             };
+            
+            // Basic Discount validation
+            if (productData.discount > 0 && !productData.discountEndDate) {
+                alert('Debes seleccionar una Fecha de Fin de Descuento si aplicas un porcentaje.');
+                return;
+            }
+
 
             const btn = document.getElementById('saveProductBtn');
             btn.disabled = true;
@@ -2023,45 +1772,110 @@
             }
         }
 
-        function editProduct(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            editingProductId = productId;
-            currentImageData = product.image;
-
-            document.getElementById('formTitle').textContent = 'Editar Producto';
-            document.getElementById('productName').value = product.name;
-            document.getElementById('productCategory').value = product.category;
-            document.getElementById('productDelivery').value = product.deliveryTime;
-            document.getElementById('productSizes').value = product.sizes;
-            document.getElementById('productColors').value = product.colors;
-            document.getElementById('productPrice').value = product.price;
-            document.getElementById('productCost').value = product.providerCost || 0;
+        // --- NOTIFICATION FUNCTION (NEW) ---
+        
+        function checkAndShowNotification() {
+            // Check if user has seen notification for today (simple flag)
+            const lastNotificationDay = localStorage.getItem('last_notification_day');
+            const today = new Date().toDateString();
             
-            updateProfitMargin();
+            if (lastNotificationDay === today) return;
 
-            if (product.image) {
-                document.getElementById('imagePreview').src = product.image;
-                document.getElementById('imagePreview').style.display = 'block';
-            } else {
-                document.getElementById('imagePreview').style.display = 'none';
+            const discountedProduct = products.find(p => 
+                p.discount > 0 && 
+                p.discountEndDate && 
+                new Date(p.discountEndDate) > new Date()
+            );
+
+            if (discountedProduct) {
+                const endDate = new Date(discountedProduct.discountEndDate).toLocaleDateString('es-CO');
+                document.getElementById('notificationText').textContent = 
+                    `¡Lanzamiento de oferta! Nuevo producto: ${discountedProduct.name} con un ${discountedProduct.discount}% de descuento. ¡Aprovecha!`;
+                document.getElementById('notificationEndDate').textContent = `Oferta válida hasta el: ${endDate}`;
+                document.getElementById('notificationModal').classList.add('active');
             }
-
-            document.getElementById('productFormModal').classList.add('active');
+        }
+        
+        function closeNotificationModal() {
+            document.getElementById('notificationModal').classList.remove('active');
+            // Set flag so user doesn't see it again today
+            localStorage.setItem('last_notification_day', new Date().toDateString());
         }
 
-        async function deleteProduct(productId) {
-            if (!confirm('¿Estás seguro de eliminar este producto? Esta acción es irreversible.')) return;
 
+        // --- ORDER FUNCTIONS ---
+
+        async function loadOrders() {
             try {
-                await deleteDoc(doc(db, 'products', productId));
-                alert('Producto eliminado con éxito.');
-                loadProducts();
+                const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                orders = [];
+                querySnapshot.forEach((doc) => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+                renderOrders();
+                updateDashboard();
             } catch (error) {
-                console.error('Error al eliminar producto:', error);
-                alert('Hubo un error al eliminar el producto.');
+                console.error('Error al cargar pedidos:', error);
             }
+        }
+        
+        function renderOrders() {
+            const table = document.getElementById('ordersTable');
+            const filter = document.getElementById('orderFilter')?.value || 'todos';
+            const filteredOrders = filter === 'todos' ? orders : orders.filter(o => o.status === filter);
+
+            if (filteredOrders.length === 0) {
+                table.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">No hay pedidos</div>';
+                return;
+            }
+
+            table.innerHTML = filteredOrders.map(order => `
+                <div class="order-item">
+                    <div class="order-header">
+                        <span class="order-id">#${order.id.slice(-6).toUpperCase()}</span>
+                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                    </div>
+                    <div class="order-details">
+                        <div><strong>Cliente:</strong> ${order.customer.name}</div>
+                        <div><strong>Tel:</strong> ${order.customer.phone}</div>
+                        <div><strong>Ciudad:</strong> ${order.customer.city}</div>
+                        <div><strong>Total:</strong> $${order.total.toLocaleString('es-CO')}</div>
+                        <div><strong>Ganancia:</strong> <span style="color: green; font-weight: bold;">$${(order.profit || 0).toLocaleString('es-CO')}</span></div>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                         <button class="order-btn btn-primary" style="padding: 0.5rem 1rem;" onclick="toggleOrderDetails('${order.id}')">
+                            Ver/Ocultar Productos
+                        </button>
+                    </div>
+
+                    <div class="order-items-detail hidden" id="detail-${order.id}">
+                        <strong>Productos en el Pedido:</strong>
+                        <ul>
+                            ${order.items.map(item => `
+                                <li>${item.quantity}x ${item.name} 
+                                    ${item.selectedSize ? `(T: ${item.selectedSize})` : ''} 
+                                    ${item.selectedColor ? `(C: ${item.selectedColor})` : ''}
+                                    - $${(item.price * item.quantity).toLocaleString('es-CO')}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="order-actions" style="margin-top: 1rem;">
+                        ${order.status !== 'comprado' ? `<button class="order-btn btn-primary" onclick="changeOrderStatus('${order.id}', 'comprado')">Marcar Comprado</button>` : ''}
+                        ${order.status !== 'encamino' ? `<button class="order-btn btn-primary" onclick="changeOrderStatus('${order.id}', 'encamino')">Marcar En Camino</button>` : ''}
+                        ${order.status !== 'entregado' ? `<button class="order-btn btn-success" onclick="changeOrderStatus('${order.id}', 'entregado')">Marcar Entregado</button>` : ''}
+                        ${order.status !== 'cancelado' ? `<button class="order-btn btn-danger" onclick="changeOrderStatus('${order.id}', 'cancelado')">Cancelar</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // NEW: Toggle Order Details
+        function toggleOrderDetails(orderId) {
+            document.getElementById(`detail-${orderId}`).classList.toggle('hidden');
         }
 
         updateCart();
