@@ -1556,21 +1556,16 @@
 
         function toggleAdmin() {
             if (!currentUser) {
+                // Si no hay usuario, vamos a la pantalla de login
                 document.getElementById('mainApp').classList.add('hidden');
                 document.getElementById('loginScreen').classList.remove('hidden');
                 return;
             }
+            // Si hay usuario, togglea el modal
             document.getElementById('adminModal').classList.toggle('active');
             if (document.getElementById('adminModal').classList.contains('active')) {
                 loadOrders();
             }
-        }
-
-        // NAVIGATION / UI
-        function toggleCart() {
-            document.getElementById('cartModal').classList.toggle('active');
-            document.getElementById('checkoutForm').style.display = 'none';
-            document.getElementById('showCheckoutBtn').style.display = cart.length > 0 ? 'block' : 'none';
         }
         
         function switchTab(tab) {
@@ -1578,6 +1573,37 @@
             document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(tab + 'Content').classList.add('active');
+        }
+        
+        function renderAdminProducts() {
+            const list = document.getElementById('adminProductsList');
+
+            if (products.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #666;">No hay productos en el inventario.</p>';
+                return;
+            }
+
+            list.innerHTML = products.map(product => `
+                <div class="product-card" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: default;">
+                    <div style="flex: 1;">
+                        <div class="product-name" style="font-size: 1.1rem; margin-bottom: 0.2rem;">${product.name}</div>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            Precio: $${product.price.toLocaleString('es-CO')} | Costo: $${(product.providerCost || 0).toLocaleString('es-CO')} | Ganancia: <span style="color: green; font-weight: bold;">$${(product.price - (product.providerCost || 0)).toLocaleString('es-CO')}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="order-btn btn-primary" onclick="editProduct('${product.id}')">Editar</button>
+                        <button class="order-btn btn-danger" onclick="deleteProduct('${product.id}')">Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // NAVIGATION / UI
+        function toggleCart() {
+            document.getElementById('cartModal').classList.toggle('active');
+            document.getElementById('checkoutForm').style.display = 'none';
+            document.getElementById('showCheckoutBtn').style.display = cart.length > 0 ? 'block' : 'none';
         }
 
         // CART & CHECKOUT
@@ -1596,7 +1622,6 @@
         }
 
         function updateQuantity(productId, change) {
-            // Encuentra el item por ID (la lógica de opciones es compleja para esta vista)
             const itemIndex = cart.findIndex(i => i.id === productId);
             if (itemIndex > -1) {
                 const item = cart[itemIndex];
@@ -1611,7 +1636,6 @@
         }
 
         function removeFromCart(productId) {
-            // Esto solo elimina el primer match por ID. En una versión avanzada, debería manejar opciones.
             const index = cart.findIndex(item => item.id === productId);
             if (index > -1) {
                 cart.splice(index, 1);
@@ -1836,7 +1860,6 @@
             const product = products.find(p => p.id === productId);
             if (!product) return;
             
-            // Lógica de cálculo de precio con descuento
             const isDiscounted = product.discount > 0 && 
                                 product.discountEndDate && 
                                 new Date(product.discountEndDate) > new Date();
@@ -1845,10 +1868,10 @@
                 ? product.price * (1 - product.discount / 100)
                 : product.price;
 
-            currentDetailProduct = product;
-            detailQuantity = 1;
-            selectedDetailSize = '';
-            selectedDetailColor = '';
+            let currentDetailProduct = product;
+            let detailQuantity = 1;
+            let selectedDetailSize = '';
+            let selectedDetailColor = '';
 
             document.getElementById('detailTitle').textContent = product.name;
             document.getElementById('detailPrice').innerHTML = isDiscounted 
@@ -1865,7 +1888,6 @@
                 imageContainer.innerHTML = '<div style="font-size: 6rem;">📦</div>';
             }
 
-            // Manejo de tallas y colores
             document.getElementById('sizeSelector').style.display = product.sizes ? 'block' : 'none';
             document.getElementById('colorSelector').style.display = product.colors ? 'block' : 'none';
 
@@ -1883,7 +1905,6 @@
                 ).join('');
             }
             
-            // Limpiar estados de selección previa
             document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
             document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
 
@@ -1891,97 +1912,96 @@
             document.getElementById('productDetailModal').classList.add('active');
         }
 
-        function closeProductDetail() {
-            document.getElementById('productDetailModal').classList.remove('active');
-            currentDetailProduct = null;
-        }
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
 
-        function selectDetailSize(size) {
-            selectedDetailSize = size;
-            document.querySelectorAll('.size-option').forEach(opt => {
-                opt.classList.remove('selected');
-                if (opt.textContent === size) opt.classList.add('selected');
-            });
-            updateAddToCartButton();
-        }
-
-        function selectDetailColor(color) {
-            selectedDetailColor = color;
-            document.querySelectorAll('.color-option').forEach(opt => {
-                opt.classList.remove('selected');
-                if (opt.textContent === color) opt.classList.add('selected');
-            });
-            updateAddToCartButton();
-        }
-
-        function changeDetailQuantity(change) {
-            detailQuantity = Math.max(1, detailQuantity + change);
-            document.getElementById('detailQuantity').textContent = detailQuantity;
-        }
-
-        function updateAddToCartButton() {
-            const btn = document.getElementById('addToCartDetailBtn');
-            const needsSize = currentDetailProduct?.sizes;
-            const needsColor = currentDetailProduct?.colors;
+            const needsOptions = product.sizes || product.colors;
             
-            if ((needsSize && !selectedDetailSize) || (needsColor && !selectedDetailColor)) {
-                btn.disabled = true;
-                btn.textContent = 'Selecciona ' + (needsSize && !selectedDetailSize ? 'talla' : 'color');
+            if (needsOptions) {
+                openProductDetail(productId);
             } else {
-                btn.disabled = false;
-                btn.textContent = 'Agregar al Carrito';
-            }
-        }
+                const isDiscounted = product.discount > 0 && product.discountEndDate && new Date(product.discountEndDate) > new Date();
+                const finalPrice = isDiscounted ? product.price * (1 - product.discount / 100) : product.price;
 
-        function addToCartFromDetail() {
-            if (!currentDetailProduct) return;
-
-            // Lógica para manejar el precio con descuento al agregar
-            const isDiscounted = currentDetailProduct.discount > 0 && 
-                                currentDetailProduct.discountEndDate && 
-                                new Date(currentDetailProduct.discountEndDate) > new Date();
-            const finalPrice = isDiscounted 
-                ? currentDetailProduct.price * (1 - currentDetailProduct.discount / 100)
-                : currentDetailProduct.price;
-
-            for (let i = 0; i < detailQuantity; i++) {
-                const existingItem = cart.find(item => 
-                    item.id === currentDetailProduct.id && 
-                    item.selectedSize === selectedDetailSize && 
-                    item.selectedColor === selectedDetailColor
-                );
-
+                const existingItem = cart.find(item => item.id === productId);
                 if (existingItem) {
                     existingItem.quantity++;
                 } else {
-                    cart.push({
-                        ...currentDetailProduct,
-                        price: finalPrice, // Guarda el precio final de la oferta
-                        originalPrice: currentDetailProduct.price, // Guarda el precio original para referencia
-                        quantity: 1,
-                        selectedSize: selectedDetailSize,
-                        selectedColor: selectedDetailColor
+                    cart.push({ 
+                        ...product, 
+                        price: finalPrice, 
+                        originalPrice: product.price,
+                        quantity: 1, 
+                        selectedSize: '', 
+                        selectedColor: '' 
                     });
                 }
+                saveCart();
+                updateCart();
             }
-
-            saveCart();
-            updateCart();
-            closeProductDetail();
-            
-            const btn = document.getElementById('addToCartDetailBtn');
-            btn.textContent = '✓ Agregado!';
-            btn.style.background = '#28a745';
-            setTimeout(() => {
-                btn.textContent = 'Agregar al Carrito';
-                btn.style.background = '';
-            }, 1500);
         }
 
-        // --- LAS OTRAS FUNCIONES ADMINISTRATIVAS DEBEN ESTAR AQUÍ ---
-        // (renderAdminProducts, updateDashboard, renderOrders, etc.)
+        // --- ADMINISTRACIÓN DE PRODUCTOS (SIMPLIFICADO) ---
+        
+        function updateProfitMargin() {
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            const cost = parseFloat(document.getElementById('productCost').value) || 0;
+            const profit = price - cost;
+            const margin = price > 0 ? (profit / price * 100).toFixed(2) : '0.00';
+            document.getElementById('profitMargin').value = `$${profit.toLocaleString('es-CO')} (${margin}%)`;
+        }
 
-        // --- NOTIFICATION FUNCTIONS ---
+        async function saveProduct(event) {
+            event.preventDefault();
+
+            const productData = {
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                deliveryTime: document.getElementById('productDelivery').value,
+                sizes: document.getElementById('productSizes').value,
+                colors: document.getElementById('productColors').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                providerCost: parseFloat(document.getElementById('productCost').value),
+                image: currentImageData || null,
+                
+                discount: parseFloat(document.getElementById('productDiscount').value) || 0,
+                discountEndDate: document.getElementById('discountEndDate').value || null,
+                
+                createdAt: Timestamp.now()
+            };
+            
+            if (productData.discount > 0 && !productData.discountEndDate) {
+                alert('Debes seleccionar una Fecha de Fin de Descuento si aplicas un porcentaje.');
+                return;
+            }
+
+            const btn = document.getElementById('saveProductBtn');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                if (editingProductId) {
+                    const productRef = doc(db, 'products', editingProductId);
+                    await updateDoc(productRef, productData);
+                    alert('Producto actualizado con éxito.');
+                } else {
+                    await addDoc(collection(db, 'products'), productData);
+                    alert('Producto agregado con éxito.');
+                }
+                
+                closeProductForm();
+                loadProducts();
+            } catch (error) {
+                console.error('Error al guardar producto:', error);
+                alert('Hubo un error al guardar el producto.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar Producto';
+            }
+        }
+
+        // --- NOTIFICACIONES ---
         
         function checkAndShowNotification() {
             const lastNotificationDay = localStorage.getItem('last_notification_day');
@@ -2026,7 +2046,8 @@
             }
             
             loadProducts();
-            if (user) loadOrders();
+            // Solo cargamos pedidos si el usuario está autenticado, sino dará un error de permiso/lectura.
+            if (user) loadOrders(); 
         });
 
 
@@ -2046,10 +2067,6 @@
             const costInput = document.getElementById('productCost');
             if (priceInput) priceInput.addEventListener('input', updateProfitMargin);
             if (costInput) costInput.addEventListener('input', updateProfitMargin);
-            
-            // Eliminamos la clase loading aquí para asegurar que aparezca
-            document.body.classList.remove('loading');
-            document.body.classList.add('loaded');
         });
 
         // Aseguramos que la inicialización del carrito se haga al final del script
