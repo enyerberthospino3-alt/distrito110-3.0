@@ -1389,7 +1389,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="formTitle">Agregar Producto</h2>
-                <button class="close-btn" onclick="closeProductForm()">×</button>
+                <button class="close-btn" id="closeProductFormButton">×</button>
             </div>
             <form id="productForm" onsubmit="saveProduct(event)" style="padding: 1.5rem;">
                 <div class="form-group">
@@ -1525,7 +1525,7 @@
         let currentFilter = 'todos';
 
         // --- DEFINICIÓN DE FUNCIONES ---
-        
+
         // AUTH & ADMIN
         async function login(event) {
             event.preventDefault();
@@ -1586,6 +1586,31 @@
         function closeProductForm() {
             document.getElementById('productFormModal').classList.remove('active');
         }
+        
+        function renderAdminProducts() {
+            const list = document.getElementById('adminProductsList');
+
+            if (products.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #666;">No hay productos en el inventario.</p>';
+                return;
+            }
+
+            list.innerHTML = products.map(product => `
+                <div class="product-card" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: default;">
+                    <div style="flex: 1;">
+                        <div class="product-name" style="font-size: 1.1rem; margin-bottom: 0.2rem;">${product.name}</div>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            Precio: $${product.price.toLocaleString('es-CO')} | Costo: $${(product.providerCost || 0).toLocaleString('es-CO')} | Ganancia: <span style="color: green; font-weight: bold;">$${(product.price - (product.providerCost || 0)).toLocaleString('es-CO')}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="order-btn btn-primary" onclick="editProduct('${product.id}')">Editar</button>
+                        <button class="order-btn btn-danger" onclick="deleteProduct('${product.id}')">Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
 
         // NAVIGATION / UI
         function toggleCart() {
@@ -1608,15 +1633,420 @@
             cart[index].selectedColor = color;
             saveCart();
         }
-        
-        // --- RESTO DE FUNCIONES (SIMPLIFICADO POR REPETICIÓN) ---
-        // (updateQuantity, removeFromCart, updateCart, processCheckout, loadProducts, etc.)
 
-        // --- ASIGNACIONES GLOBALES (REPARACIÓN DE COMPATIBILIDAD) ---
-        // Exponemos las funciones necesarias para los botones y eventos inline
+        function updateQuantity(productId, change) {
+            const itemIndex = cart.findIndex(i => i.id === productId);
+            if (itemIndex > -1) {
+                const item = cart[itemIndex];
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    saveCart();
+                    updateCart();
+                }
+            }
+        }
+
+        function removeFromCart(productId) {
+            const index = cart.findIndex(item => item.id === productId);
+            if (index > -1) {
+                cart.splice(index, 1);
+                saveCart();
+                updateCart();
+            }
+        }
+        
+        function updateCart() {
+            const cartCount = document.getElementById('cartCount');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const showCheckoutBtn = document.getElementById('showCheckoutBtn');
+
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Tu carrito está vacío</div>';
+                cartTotal.textContent = '0';
+                showCheckoutBtn.style.display = 'none';
+                return;
+            }
+
+            cartItems.innerHTML = cart.map((item, index) => `
+                <div class="cart-item">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold;">${item.name}</div>
+                        <div style="color: var(--rojo); font-weight: bold;">$${(item.price * item.quantity).toLocaleString('es-CO')}</div>
+                        ${item.sizes ? `
+                            <select onchange="updateCartItemSize(${index}, this.value)" style="margin-top: 0.5rem; padding: 0.3rem;">
+                                <option value="">Seleccionar talla</option>
+                                ${item.sizes.split(',').map(s => `<option value="${s.trim()}" ${item.selectedSize === s.trim() ? 'selected' : ''}>${s.trim()}</option>`).join('')}
+                            </select>
+                        ` : ''}
+                        ${item.colors ? `
+                            <select onchange="updateCartItemColor(${index}, this.value)" style="margin-top: 0.5rem; padding: 0.3rem;">
+                                <option value="">Seleccionar color</option>
+                                ${item.colors.split(',').map(c => `<option value="${c.trim()}" ${item.selectedColor === c.trim() ? 'selected' : ''}>${c.trim()}</option>`).join('')}
+                            </select>
+                        ` : ''}
+                    </div>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
+                        <span style="font-weight: bold; min-width: 30px; text-align: center;">${item.quantity}</span>
+                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
+                    </div>
+                    <button class="remove-btn" onclick="removeFromCart('${item.id}')">Eliminar</button>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            cartTotal.textContent = total.toLocaleString('es-CO');
+            showCheckoutBtn.style.display = 'block';
+        }
+
+        function showCheckoutForm() {
+            document.getElementById('checkoutForm').style.display = 'block';
+            document.getElementById('showCheckoutBtn').style.display = 'none';
+        }
+
+        function selectPayment(method) {
+            selectedPayment = method;
+            document.querySelectorAll('.payment-method').forEach(pm => pm.classList.remove('selected'));
+            event.target.closest('.payment-method').classList.add('selected');
+            document.getElementById('checkoutBtn').disabled = false;
+        }
+
+        async function processCheckout() {
+            if (!selectedPayment) {
+                alert('Selecciona un método de pago');
+                return;
+            }
+
+            const name = document.getElementById('customerName').value;
+            const phone = document.getElementById('customerPhone').value;
+            const city = document.getElementById('customerCity').value;
+            const address = document.getElementById('customerAddress').value;
+
+            if (!name || !phone || !city || !address) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            const incompleteItems = cart.filter(item => 
+                (item.sizes && !item.selectedSize) || 
+                (item.colors && !item.selectedColor)
+            );
+
+            if (incompleteItems.length > 0) {
+                const names = incompleteItems.map(item => item.name).join(', ');
+                alert(`Debes seleccionar la talla y/o color para: ${names}`);
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const providerCost = cart.reduce((sum, item) => sum + ((item.providerCost || 0) * item.quantity), 0);
+
+            try {
+                const orderData = {
+                    items: cart,
+                    customer: { name, phone, city, address },
+                    paymentMethod: selectedPayment,
+                    total,
+                    providerCost,
+                    profit: total - providerCost,
+                    status: 'nuevo',
+                    createdAt: Timestamp.now()
+                };
+
+                await addDoc(collection(db, 'orders'), orderData);
+
+                const message = `¡Hola! Quiero hacer un pedido:\n\n${cart.map(item => `${item.quantity}x ${item.name}${item.selectedSize ? ` - Talla: ${item.selectedSize}` : ''}${item.selectedColor ? ` - Color: ${item.selectedColor}` : ''}`).join('\n')}\n\nTotal: $${total.toLocaleString('es-CO')}\nPago: ${selectedPayment}\n\nDirección: ${address}\nCiudad: ${city}`;
+                
+                window.open(`https://wa.me/573189377107?text=${encodeURIComponent(message)}`, '_blank');
+
+                alert('¡Pedido realizado! Te contactaremos por WhatsApp');
+                cart = [];
+                saveCart();
+                updateCart();
+                toggleCart();
+                selectedPayment = null;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar el pedido');
+            }
+        }
+        
+        // PRODUCTS & DETAIL MODAL
+        async function loadProducts() {
+            try {
+                const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+                products = [];
+                querySnapshot.forEach((doc) => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+                renderProducts(currentFilter);
+                if (currentUser) renderAdminProducts();
+                checkAndShowNotification(); 
+            } catch (error) {
+                console.error('Error al cargar productos:', error);
+            }
+        }
+
+        function renderProducts(filter = 'todos', search = '') {
+            currentFilter = filter;
+            const grid = document.getElementById('productsGrid');
+            const searchTerm = search.toLowerCase();
+            
+            let filteredProducts = products;
+
+            if (filter !== 'todos') {
+                filteredProducts = filteredProducts.filter(p => p.category === filter);
+            }
+            
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (filteredProducts.length === 0) {
+                grid.innerHTML = '<div class="empty-products">No hay productos disponibles que coincidan con los filtros/búsqueda.</div>';
+                return;
+            }
+            
+            grid.innerHTML = filteredProducts.map(product => {
+                const isValidDiscountDate = product.discountEndDate && typeof product.discountEndDate === 'string';
+                const isDiscounted = product.discount > 0 && 
+                                     isValidDiscountDate && 
+                                     new Date(product.discountEndDate) > new Date();
+                
+                const finalPrice = isDiscounted 
+                    ? product.price * (1 - product.discount / 100)
+                    : product.price;
+
+                const priceHtml = isDiscounted 
+                    ? `<div class="price-container">
+                           <div class="product-price">${finalPrice.toLocaleString('es-CO')}</div>
+                           <div class="original-price">${product.price.toLocaleString('es-CO')}</div>
+                       </div>`
+                    : `<div class="product-price">${finalPrice.toLocaleString('es-CO')}</div>`;
+                
+                const discountBadge = isDiscounted 
+                    ? `<div class="discount-badge">-${product.discount}%</div>`
+                    : '';
+
+                return `
+                    <div class="product-card" onclick="openProductDetail('${product.id}')">
+                        ${discountBadge}
+                        <div class="product-image">
+                            ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<div style="font-size: 4rem;">📦</div>'}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-details">
+                                ${product.sizes ? `Tallas disponibles<br>` : ''}
+                                ${product.colors ? `Varios colores<br>` : ''}
+                                ⏱️ ${product.deliveryTime || '3-5 días'}
+                            </div>
+                            ${priceHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterCategory(category) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderProducts(category, document.getElementById('productSearch').value); 
+        }
+
+        function searchProducts() {
+            const searchTerm = document.getElementById('productSearch').value;
+            const activeCategory = document.querySelector('.category-btn.active').textContent.toLowerCase();
+            const filter = activeCategory === 'todos' ? 'todos' : activeCategory;
+            renderProducts(filter, searchTerm);
+        }
+        
+        function openProductDetail(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            const isDiscounted = product.discount > 0 && 
+                                product.discountEndDate && 
+                                new Date(product.discountEndDate) > new Date();
+            
+            const finalPrice = isDiscounted 
+                ? product.price * (1 - product.discount / 100)
+                : product.price;
+
+            let currentDetailProduct = product;
+            let detailQuantity = 1;
+            let selectedDetailSize = '';
+            let selectedDetailColor = '';
+
+            document.getElementById('detailTitle').textContent = product.name;
+            document.getElementById('detailPrice').innerHTML = isDiscounted 
+                ? `$${finalPrice.toLocaleString('es-CO')} <span class="original-price" style="font-size: 1rem; color: #999; text-decoration: line-through;">$${product.price.toLocaleString('es-CO')}</span>`
+                : `$${finalPrice.toLocaleString('es-CO')}`;
+
+            document.getElementById('detailDelivery').innerHTML = `<strong>🚚 Tiempo de entrega:</strong> ${product.deliveryTime || '3-5 días'}`;
+            document.getElementById('detailQuantity').textContent = detailQuantity;
+
+            const imageContainer = document.getElementById('detailImage');
+            if (product.image) {
+                imageContainer.innerHTML = `<img src="${product.image}" alt="${product.name}">`;
+            } else {
+                imageContainer.innerHTML = '<div style="font-size: 6rem;">📦</div>';
+            }
+
+            document.getElementById('sizeSelector').style.display = product.sizes ? 'block' : 'none';
+            document.getElementById('colorSelector').style.display = product.colors ? 'block' : 'none';
+
+            if (product.sizes) {
+                const sizes = product.sizes.split(',').map(s => s.trim());
+                document.getElementById('sizeOptions').innerHTML = sizes.map(size => 
+                    `<div class="size-option" onclick="selectDetailSize('${size}')">${size}</div>`
+                ).join('');
+            }
+
+            if (product.colors) {
+                const colors = product.colors.split(',').map(c => c.trim());
+                document.getElementById('colorOptions').innerHTML = colors.map(color => 
+                    `<div class="color-option" onclick="selectDetailColor('${color}')">${color}</div>`
+                ).join('');
+            }
+            
+            document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+
+            updateAddToCartButton();
+            document.getElementById('productDetailModal').classList.add('active');
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const needsOptions = product.sizes || product.colors;
+            
+            if (needsOptions) {
+                openProductDetail(productId);
+            } else {
+                const isDiscounted = product.discount > 0 && product.discountEndDate && new Date(product.discountEndDate) > new Date();
+                const finalPrice = isDiscounted ? product.price * (1 - product.discount / 100) : product.price;
+
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ 
+                        ...product, 
+                        price: finalPrice, 
+                        originalPrice: product.price,
+                        quantity: 1, 
+                        selectedSize: '', 
+                        selectedColor: '' 
+                    });
+                }
+                saveCart();
+                updateCart();
+            }
+        }
+
+        // --- ADMINISTRACIÓN DE PRODUCTOS (SIMPLIFICADO) ---
+        
+        function updateProfitMargin() {
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            const cost = parseFloat(document.getElementById('productCost').value) || 0;
+            const profit = price - cost;
+            const margin = price > 0 ? (profit / price * 100).toFixed(2) : '0.00';
+            document.getElementById('profitMargin').value = `$${profit.toLocaleString('es-CO')} (${margin}%)`;
+        }
+
+        async function saveProduct(event) {
+            event.preventDefault();
+
+            const productData = {
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                deliveryTime: document.getElementById('productDelivery').value,
+                sizes: document.getElementById('productSizes').value,
+                colors: document.getElementById('productColors').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                providerCost: parseFloat(document.getElementById('productCost').value),
+                image: currentImageData || null,
+                
+                discount: parseFloat(document.getElementById('productDiscount').value) || 0,
+                discountEndDate: document.getElementById('discountEndDate').value || null,
+                
+                createdAt: Timestamp.now()
+            };
+            
+            if (productData.discount > 0 && !productData.discountEndDate) {
+                alert('Debes seleccionar una Fecha de Fin de Descuento si aplicas un porcentaje.');
+                return;
+            }
+
+            const btn = document.getElementById('saveProductBtn');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                if (editingProductId) {
+                    const productRef = doc(db, 'products', editingProductId);
+                    await updateDoc(productRef, productData);
+                    alert('Producto actualizado con éxito.');
+                } else {
+                    await addDoc(collection(db, 'products'), productData);
+                    alert('Producto agregado con éxito.');
+                }
+                
+                closeProductForm();
+                loadProducts();
+            } catch (error) {
+                console.error('Error al guardar producto:', error);
+                alert('Hubo un error al guardar el producto.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar Producto';
+            }
+        }
+
+        // --- NOTIFICACIONES ---
+        
+        function checkAndShowNotification() {
+            const lastNotificationDay = localStorage.getItem('last_notification_day');
+            const today = new Date().toDateString();
+            
+            if (lastNotificationDay === today) return;
+
+            const discountedProduct = products.find(p => {
+                const isValidDiscountDate = p.discountEndDate && typeof p.discountEndDate === 'string';
+                return p.discount > 0 && isValidDiscountDate && new Date(p.discountEndDate) > new Date();
+            });
+
+            if (discountedProduct) {
+                const endDate = new Date(discountedProduct.discountEndDate).toLocaleDateString('es-CO');
+                document.getElementById('notificationText').textContent = 
+                    `¡Lanzamiento de oferta! Nuevo producto: ${discountedProduct.name} con un ${discountedProduct.discount}% de descuento. ¡Aprovecha!`;
+                document.getElementById('notificationEndDate').textContent = `Oferta válida hasta el: ${endDate}`;
+                document.getElementById('notificationModal').classList.add('active');
+            }
+        }
+        
+        function closeNotificationModal() {
+            document.getElementById('notificationModal').classList.remove('active');
+            localStorage.setItem('last_notification_day', new Date().toDateString());
+        }
+        
+        // --- ASIGNACIONES GLOBALES ---
+        // Se exponen las funciones al ámbito global para la compatibilidad con 'onclick' y Event Listeners
         window.login = login;
         window.logout = logout;
-        window.filterCategory = filterCategory; // Necesario para botones de categorías
+        window.filterCategory = filterCategory;
         window.searchProducts = searchProducts; 
         window.addToCart = addToCart;
         window.updateQuantity = updateQuantity;
@@ -1624,7 +2054,7 @@
         window.selectPayment = selectPayment;
         window.processCheckout = processCheckout;
         window.showCheckoutForm = showCheckoutForm;
-        window.showAddProduct = showAddProduct; // Soluciona ReferenceError en la línea 2040
+        window.showAddProduct = showAddProduct;
         window.closeProductForm = closeProductForm;
         window.updateProfitMargin = updateProfitMargin; 
         window.toggleCart = toggleCart;
@@ -1638,8 +2068,10 @@
         window.updateCartItemColor = updateCartItemColor;
         window.changeDetailQuantity = changeDetailQuantity;
         window.addToCartFromDetail = addToCartFromDetail;
-        
-        // LÓGICA DE VISIBILIDAD Y AUTENTICACIÓN
+
+
+        // --- LÓGICA DE FIREBASE Y VINCULACIÓN ---
+
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             
@@ -1665,15 +2097,16 @@
             const adminButton = document.getElementById('adminButton');
             const closeCartButton = document.getElementById('closeCartButton');
             const closeAdminButton = document.getElementById('closeAdminButton');
-            const addProductButton = document.getElementById('addProductButton'); // NUEVO BOTÓN
+            const addProductButton = document.getElementById('addProductButton');
+            const closeProductFormButton = document.getElementById('closeProductFormButton'); // NUEVO CIERRE
 
-            // Vinculación directa de botones
             if (cartButton) cartButton.addEventListener('click', toggleCart);
             if (adminButton) adminButton.addEventListener('click', toggleAdmin);
             if (closeCartButton) closeCartButton.addEventListener('click', toggleCart);
             if (closeAdminButton) closeAdminButton.addEventListener('click', toggleAdmin);
-            if (addProductButton) addProductButton.addEventListener('click', showAddProduct); // VINCULACIÓN CRÍTICA
-            
+            if (addProductButton) addProductButton.addEventListener('click', showAddProduct);
+            if (closeProductFormButton) closeProductFormButton.addEventListener('click', closeProductForm);
+
             const priceInput = document.getElementById('productPrice');
             const costInput = document.getElementById('productCost');
             if (priceInput) priceInput.addEventListener('input', updateProfitMargin);
